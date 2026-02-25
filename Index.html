@@ -300,7 +300,7 @@
           </div>
         </div>
 
-        <!-- City box (read-only, NOT stored) -->
+        <!-- Single City box (read-only) -->
         <div class="form-row">
           <div class="form-group">
             <label for="city"><i class="fas fa-city"></i> City</label>
@@ -348,7 +348,7 @@
       document.getElementById('date').value = today;
     }
 
-    // Reverse geocode using OpenStreetMap Nominatim (fills City only)
+    // Reverse geocode using OpenStreetMap Nominatim
     function reverseGeocode(lat, lon) {
       const url =
         'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' +
@@ -385,7 +385,6 @@
         });
     }
 
-    // Geolocation with high accuracy
     function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -393,25 +392,15 @@
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
 
-            console.log('Accuracy (m):', position.coords.accuracy);
-
             document.getElementById('latitude').value = lat.toFixed(4);
             document.getElementById('longitude').value = lon.toFixed(4);
 
             reverseGeocode(lat, lon);
           },
           error => {
-            console.error('Geolocation error:', error);
-            alert('Cannot get GPS location: ' + error.message);
-          },
-          {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0
+            console.log('Geolocation error:', error);
           }
         );
-      } else {
-        alert('Geolocation is not supported on this device/browser.');
       }
     }
 
