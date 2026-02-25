@@ -272,6 +272,7 @@
           </div>
         </div>
 
+        <!-- Lat / Long / City / State -->
         <div class="form-row">
           <div class="form-group">
             <label for="latitude"><i class="fas fa-location-dot"></i> Latitude</label>
@@ -296,6 +297,30 @@
             >
           </div>
         </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="city"><i class="fas fa-city"></i> City</label>
+            <input
+              type="text"
+              id="city"
+              name="City"
+              readonly
+              placeholder="Auto-filled from location"
+            >
+          </div>
+          <div class="form-group">
+            <label for="state"><i class="fas fa-flag"></i> State</label>
+            <input
+              type="text"
+              id="state"
+              name="State"
+              readonly
+              placeholder="Auto-filled from location"
+            >
+          </div>
+        </div>
+        <!-- End City / State -->
 
         <div class="form-group">
           <label for="remarks"><i class="fas fa-comment"></i> Remarks</label>
@@ -330,14 +355,55 @@
       document.getElementById('date').value = today;
     }
 
+    // Reverse geocode using OpenStreetMap Nominatim
+    function reverseGeocode(lat, lon) {
+      const url =
+        'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' +
+        encodeURIComponent(lat) +
+        '&lon=' +
+        encodeURIComponent(lon) +
+        '&zoom=10&addressdetails=1';
+
+      fetch(url, {
+        headers: {
+          // Nominatim requires a proper User-Agent or Referer
+          'Accept': 'application/json'
+        }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data && data.address) {
+            const addr = data.address;
+            // Try different fields for city/town/village etc.
+            const city =
+              addr.city ||
+              addr.town ||
+              addr.village ||
+              addr.hamlet ||
+              '';
+            const state = addr.state || '';
+
+            document.getElementById('city').value = city;
+            document.getElementById('state').value = state;
+          }
+        })
+        .catch(err => {
+          console.error('Reverse geocode error:', err);
+        });
+    }
+
     function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           position => {
-            document.getElementById('latitude').value =
-              position.coords.latitude.toFixed(4);
-            document.getElementById('longitude').value =
-              position.coords.longitude.toFixed(4);
+            const lat = position.coords.latitude;
+            const lon = position.coords.longitude;
+
+            document.getElementById('latitude').value = lat.toFixed(4);
+            document.getElementById('longitude').value = lon.toFixed(4);
+
+            // Call reverse geocoding after we get lat/lon
+            reverseGeocode(lat, lon);
           },
           error => {
             console.log('Geolocation error:', error);
@@ -369,15 +435,15 @@
               messageDiv.textContent = 'Location submitted successfully!';
               messageDiv.style.display = 'block';
 
-              // wait 5 seconds, then reset form and hide message
+              // After 5 seconds, reset form and hide message
               setTimeout(() => {
                 form.reset();
                 setCurrentDate();
-                getCurrentLocation();
+                getCurrentLocation(); // this will also refill city/state
                 messageDiv.className = '';
                 messageDiv.textContent = '';
                 messageDiv.style.display = 'none';
-              }, 5000); // 5000 ms = 5 seconds
+              }, 5000);
             } else {
               messageDiv.className = 'error';
               messageDiv.textContent =
