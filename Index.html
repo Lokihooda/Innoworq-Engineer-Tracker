@@ -192,7 +192,7 @@
       <form
         id="trackingForm"
         method="POST"
-        action="https://script.google.com/macros/s/AKfycbxfdgamqp0nAdqDJT1xJ2c92Shx7KLyZ_m8VnCiGrbt8HSRX2nAPkhvD6BlqjcY6k6ObQ/exec"
+        action="<?= ScriptApp.getService().getUrl(); ?>"
       >
         <div class="form-row">
           <div class="form-group">
@@ -272,7 +272,7 @@
           </div>
         </div>
 
-        <!-- Lat / Long / City / State -->
+        <!-- Lat / Long (read-only) -->
         <div class="form-row">
           <div class="form-group">
             <label for="latitude"><i class="fas fa-location-dot"></i> Latitude</label>
@@ -283,6 +283,7 @@
               step="0.0001"
               required
               placeholder="28.5355"
+              readonly
             >
           </div>
           <div class="form-group">
@@ -294,10 +295,12 @@
               step="0.0001"
               required
               placeholder="77.3910"
+              readonly
             >
           </div>
         </div>
 
+        <!-- Single City box -->
         <div class="form-row">
           <div class="form-group">
             <label for="city"><i class="fas fa-city"></i> City</label>
@@ -309,18 +312,8 @@
               placeholder="Auto-filled from location"
             >
           </div>
-          <div class="form-group">
-            <label for="state"><i class="fas fa-flag"></i> State</label>
-            <input
-              type="text"
-              id="state"
-              name="State"
-              readonly
-              placeholder="Auto-filled from location"
-            >
-          </div>
         </div>
-        <!-- End City / State -->
+        <!-- End City -->
 
         <div class="form-group">
           <label for="remarks"><i class="fas fa-comment"></i> Remarks</label>
@@ -366,7 +359,6 @@
 
       fetch(url, {
         headers: {
-          // Nominatim requires a proper User-Agent or Referer
           'Accept': 'application/json'
         }
       })
@@ -374,17 +366,18 @@
         .then(data => {
           if (data && data.address) {
             const addr = data.address;
-            // Try different fields for city/town/village etc.
+
             const city =
               addr.city ||
               addr.town ||
               addr.village ||
               addr.hamlet ||
+              addr.suburb ||
               '';
-            const state = addr.state || '';
 
             document.getElementById('city').value = city;
-            document.getElementById('state').value = state;
+          } else {
+            document.getElementById('city').value = '';
           }
         })
         .catch(err => {
@@ -402,7 +395,6 @@
             document.getElementById('latitude').value = lat.toFixed(4);
             document.getElementById('longitude').value = lon.toFixed(4);
 
-            // Call reverse geocoding after we get lat/lon
             reverseGeocode(lat, lon);
           },
           error => {
@@ -420,7 +412,7 @@
       const messageDiv = document.getElementById('message');
 
       form.addEventListener('submit', function (e) {
-        e.preventDefault(); // stop page navigation
+        e.preventDefault();
 
         const formData = new FormData(form);
 
@@ -435,11 +427,10 @@
               messageDiv.textContent = 'Location submitted successfully!';
               messageDiv.style.display = 'block';
 
-              // After 5 seconds, reset form and hide message
               setTimeout(() => {
                 form.reset();
                 setCurrentDate();
-                getCurrentLocation(); // this will also refill city/state
+                getCurrentLocation();
                 messageDiv.className = '';
                 messageDiv.textContent = '';
                 messageDiv.style.display = 'none';
