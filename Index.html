@@ -5,176 +5,269 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Innoworq Engineer Tracking</title>
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
     body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #667eea, #764ba2);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
       padding: 20px;
-      color: #333;
     }
-    .container {
-      max-width: 800px;
-      margin: auto;
-      background: white;
+
+    .container { max-width: 800px; margin: 0 auto; }
+
+    header {
+      background: rgba(255, 255, 255, 0.95);
       padding: 30px;
       border-radius: 10px;
-    }
-    h1 {
+      margin-bottom: 30px;
       text-align: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    header h1 {
       color: #667eea;
+      font-size: 28px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
     }
+
+    .form-card {
+      background: rgba(255, 255, 255, 0.95);
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .form-group { display: flex; flex-direction: column; }
+
+    .form-group label {
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     input, select, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      margin-bottom: 15px;
-    }
-    button {
-      width: 100%;
       padding: 12px;
-      background: #667eea;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
     }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .submit-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 14px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      transition: 0.3s;
+    }
+
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+    }
+
     #message {
       margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
       text-align: center;
-      font-weight: bold;
+      display: none;
     }
-    .success { color: green; }
-    .error { color: red; }
+
+    #message.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+
+    #message.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
   </style>
 </head>
 
 <body>
-
 <div class="container">
+
+<header>
   <h1><i class="fas fa-map-marker-alt"></i> Innoworq Engineer Tracking</h1>
+</header>
 
-  <form id="trackingForm" method="POST" action="<?= scriptUrl ?>">
+<div class="form-card">
+<form id="trackingForm" method="POST" action="<?= scriptUrl ?>">
 
-    <label>Engineer Name</label>
-    <input type="text" name="Engineer Name" required>
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-user"></i> Engineer Name</label>
+<input type="text" name="Engineer Name" required>
+</div>
 
-    <label>Employee ID</label>
-    <input type="text" name="Employee ID" required>
+<div class="form-group">
+<label><i class="fas fa-id-card"></i> Employee ID</label>
+<input type="text" name="Employee ID" required>
+</div>
+</div>
 
-    <label>Ticket ID</label>
-    <input type="text" name="Ticket ID" required>
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-ticket-alt"></i> Ticket ID</label>
+<input type="text" name="Ticket ID" required>
+</div>
 
-    <label>Date</label>
-    <input type="date" id="date" name="Date" required>
+<div class="form-group">
+<label><i class="fas fa-calendar"></i> Date</label>
+<input type="date" id="date" name="Date" required>
+</div>
+</div>
 
-    <label>Login Time</label>
-    <input type="time" name="Login Time" required>
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-clock"></i> Login Time</label>
+<input type="time" name="Login Time" required>
+</div>
 
-    <label>Shift</label>
-    <select name="Shift" required>
-      <option value="">Select</option>
-      <option value="Day">Day</option>
-      <option value="Night">Night</option>
-    </select>
+<div class="form-group">
+<label><i class="fas fa-briefcase"></i> Shift</label>
+<select name="Shift" required>
+<option value="">Select</option>
+<option value="Day">Day</option>
+<option value="Night">Night</option>
+</select>
+</div>
+</div>
 
-    <label>Status</label>
-    <select name="Status" required>
-      <option value="">Select</option>
-      <option value="En Route">En Route</option>
-      <option value="On Site">On Site</option>
-      <option value="Completed">Completed</option>
-      <option value="Delayed">Delayed</option>
-    </select>
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-tasks"></i> Status</label>
+<select name="Status" required>
+<option value="">Select</option>
+<option value="En Route">En Route</option>
+<option value="On Site">On Site</option>
+<option value="Completed">Completed</option>
+<option value="Delayed">Delayed</option>
+</select>
+</div>
+</div>
 
-    <label>Latitude</label>
-    <input type="text" id="latitude" name="Latitude" readonly required>
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-location-dot"></i> Latitude</label>
+<input type="text" id="latitude" name="Latitude" readonly required>
+</div>
 
-    <label>Longitude</label>
-    <input type="text" id="longitude" name="Longitude" readonly required>
+<div class="form-group">
+<label><i class="fas fa-location-dot"></i> Longitude</label>
+<input type="text" id="longitude" name="Longitude" readonly required>
+</div>
+</div>
 
-    <label>City</label>
-    <input type="text" id="city" name="City" readonly>
+<div class="form-group">
+<label><i class="fas fa-city"></i> City</label>
+<input type="text" id="city" name="City" readonly>
+</div>
 
-    <label>Remarks</label>
-    <textarea name="Remarks"></textarea>
+<div class="form-group">
+<label><i class="fas fa-comment"></i> Remarks</label>
+<textarea name="Remarks"></textarea>
+</div>
 
-    <button type="submit">
-      <i class="fas fa-paper-plane"></i> Submit Location
-    </button>
-  </form>
+<button type="submit" class="submit-btn">
+<i class="fas fa-paper-plane"></i> Submit Location
+</button>
 
-  <div id="message"></div>
+</form>
+
+<div id="message"></div>
+</div>
 </div>
 
 <script>
-  const form = document.getElementById('trackingForm');
-  const messageDiv = document.getElementById('message');
+function setCurrentDate() {
+document.getElementById('date').value = new Date().toISOString().split('T')[0];
+}
 
-  function setCurrentDate() {
-    document.getElementById('date').value = new Date().toISOString().split('T')[0];
-  }
+function getLocation() {
+if (navigator.geolocation) {
+navigator.geolocation.getCurrentPosition(position => {
+const lat = position.coords.latitude;
+const lon = position.coords.longitude;
+document.getElementById('latitude').value = lat.toFixed(4);
+document.getElementById('longitude').value = lon.toFixed(4);
+reverseGeocode(lat, lon);
+});
+}
+}
 
-  function getLocation() {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(position => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
+function reverseGeocode(lat, lon) {
+fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
+.then(res => res.json())
+.then(data => {
+if (data.address) {
+document.getElementById('city').value =
+data.address.city ||
+data.address.town ||
+data.address.village || '';
+}
+});
+}
 
-        document.getElementById('latitude').value = lat.toFixed(4);
-        document.getElementById('longitude').value = lon.toFixed(4);
+document.getElementById('trackingForm').addEventListener('submit', function(e) {
+e.preventDefault();
+const formData = new FormData(this);
 
-        reverseGeocode(lat, lon);
-      });
-    }
-  }
+fetch("<?= scriptUrl ?>", {
+method: "POST",
+body: formData
+})
+.then(res => res.json())
+.then(data => {
+const msg = document.getElementById('message');
+if (data.result === "success") {
+msg.className = "success";
+msg.textContent = "Location submitted successfully!";
+this.reset();
+setCurrentDate();
+getLocation();
+} else {
+msg.className = "error";
+msg.textContent = "Server error: " + data.message;
+}
+});
+});
 
-  function reverseGeocode(lat, lon) {
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.address) {
-          document.getElementById('city').value =
-            data.address.city ||
-            data.address.town ||
-            data.address.village ||
-            '';
-        }
-      });
-  }
-
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const formData = new FormData(form);
-
-    fetch("<?= scriptUrl ?>", {
-      method: "POST",
-      body: formData
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.result === "success") {
-        messageDiv.className = "success";
-        messageDiv.textContent = "Location submitted successfully!";
-        form.reset();
-        setCurrentDate();
-        getLocation();
-      } else {
-        messageDiv.className = "error";
-        messageDiv.textContent = "Server error: " + data.message;
-      }
-    })
-    .catch(() => {
-      messageDiv.className = "error";
-      messageDiv.textContent = "Network error. Please try again.";
-    });
-  });
-
-  setCurrentDate();
-  getLocation();
+setCurrentDate();
+getLocation();
 </script>
 
 </body>
