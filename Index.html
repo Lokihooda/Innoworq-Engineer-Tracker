@@ -367,13 +367,22 @@
             if (data.result === 'success') {
               messageDiv.className = 'success';
               messageDiv.textContent = 'Location submitted successfully!';
-              form.reset();
-              setCurrentDate();
-              getCurrentLocation();
+              messageDiv.style.display = 'block';
+
+              // wait 5 seconds, then reset form and hide message
+              setTimeout(() => {
+                form.reset();
+                setCurrentDate();
+                getCurrentLocation();
+                messageDiv.className = '';
+                messageDiv.textContent = '';
+                messageDiv.style.display = 'none';
+              }, 5000); // 5000 ms = 5 seconds
             } else {
               messageDiv.className = 'error';
               messageDiv.textContent =
                 'Server error: ' + (data.message || 'Unknown error');
+              messageDiv.style.display = 'block';
             }
           })
           .catch(err => {
@@ -381,6 +390,7 @@
             messageDiv.className = 'error';
             messageDiv.textContent =
               'Network error submitting location. Please try again.';
+            messageDiv.style.display = 'block';
           });
       });
     });
