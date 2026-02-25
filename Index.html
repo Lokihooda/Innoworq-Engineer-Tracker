@@ -184,32 +184,70 @@
         Innoworq Engineer Tracking
       </h1>
     </header>
+
     <div class="form-card">
       <h2>Submit Engineer Location</h2>
-      <form id="trackingForm" method="POST" action="https://script.google.com/macros/s/AKfycbxfdgamqp0nAdqDJT1xJ2c92Shx7KLyZ_m8VnCiGrbt8HSRX2nAPkhvD6BlqjcY6k6ObQ/exec">
-          <div class="form-group">
-            <label for="engineer"><i class="fas fa-user"></i> Engineer Name</label>
-            <input type="text" id="engineer" name="Engineer Name" required placeholder="Enter engineer name">
-          </div>
-          <div class="form-group">
-            <label for="ticketId"><i class="fas fa-ticket-alt"></i> Ticket ID</label>
-            <input type="text" id="ticketId" name="Ticket ID" required placeholder="Enter ticket ID">
-          </div>
-        </div>
+
+      <!-- FORM START -->
+      <form
+        id="trackingForm"
+        method="POST"
+        action="https://script.google.com/macros/s/AKfycbxfdgamqp0nAdqDJT1xJ2c92Shx7KLyZ_m8VnCiGrbt8HSRX2nAPkhvD6BlqjcY6k6ObQ/exec"
+      >
         <div class="form-row">
           <div class="form-group">
+            <label for="engineer"><i class="fas fa-user"></i> Engineer Name</label>
+            <input
+              type="text"
+              id="engineer"
+              name="Engineer Name"
+              required
+              placeholder="Enter engineer name"
+            >
+          </div>
+          <div class="form-group">
             <label for="empId"><i class="fas fa-id-card"></i> Employee ID</label>
-            <input type="text" id="empId" name="Employee ID" required placeholder="Enter employee ID">
+            <input
+              type="text"
+              id="empId"
+              name="Employee ID"
+              required
+              placeholder="Enter employee ID"
+            >
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="ticketId"><i class="fas fa-ticket-alt"></i> Ticket ID</label>
+            <input
+              type="text"
+              id="ticketId"
+              name="Ticket ID"
+              required
+              placeholder="Enter ticket ID"
+            >
           </div>
           <div class="form-group">
             <label for="date"><i class="fas fa-calendar"></i> Date</label>
-            <input type="date" id="date" name="Date" required>
+            <input
+              type="date"
+              id="date"
+              name="Date"
+              required
+            >
           </div>
         </div>
+
         <div class="form-row">
           <div class="form-group">
             <label for="time"><i class="fas fa-clock"></i> Login Time</label>
-            <input type="time" id="time" name="Login Time" required>
+            <input
+              type="time"
+              id="time"
+              name="Login Time"
+              required
+            >
           </div>
           <div class="form-group">
             <label for="shift"><i class="fas fa-briefcase"></i> Shift</label>
@@ -220,6 +258,7 @@
             </select>
           </div>
         </div>
+
         <div class="form-row">
           <div class="form-group">
             <label for="status"><i class="fas fa-tasks"></i> Status</label>
@@ -232,41 +271,118 @@
             </select>
           </div>
         </div>
+
         <div class="form-row">
           <div class="form-group">
             <label for="latitude"><i class="fas fa-location-dot"></i> Latitude</label>
-            <input type="number" id="latitude" name="Latitude" step="0.0001" required placeholder="28.5355">
+            <input
+              type="number"
+              id="latitude"
+              name="Latitude"
+              step="0.0001"
+              required
+              placeholder="28.5355"
+            >
           </div>
           <div class="form-group">
             <label for="longitude"><i class="fas fa-location-dot"></i> Longitude</label>
-            <input type="number" id="longitude" name="Longitude" step="0.0001" required placeholder="77.3910">
+            <input
+              type="number"
+              id="longitude"
+              name="Longitude"
+              step="0.0001"
+              required
+              placeholder="77.3910"
+            >
           </div>
         </div>
+
         <div class="form-group">
           <label for="remarks"><i class="fas fa-comment"></i> Remarks</label>
-          <textarea id="remarks" name="Remarks" rows="4" placeholder="Enter any remarks..."></textarea>
+          <textarea
+            id="remarks"
+            name="Remarks"
+            rows="4"
+            placeholder="Enter any remarks..."
+          ></textarea>
         </div>
+
         <button type="submit" class="submit-btn">
           <i class="fas fa-paper-plane"></i>
           Submit Location
         </button>
       </form>
+      <!-- FORM END -->
+
       <div id="message"></div>
     </div>
+
     <div class="info-card">
       <h3><i class="fas fa-database"></i> Data Storage</h3>
       <p>All submissions are automatically saved to our database in real-time.</p>
       <p><strong>✅ No login required</strong> - Form is publicly accessible to everyone!</p>
     </div>
   </div>
-    <script>
+
+  <script>
     function setCurrentDate() {
-      ...
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('date').value = today;
     }
-    ...
-    document.getElementById('trackingForm').addEventListener('submit', function(e) {
-      // Let formspree handle it, just show message after
-      ...
+
+    function getCurrentLocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          position => {
+            document.getElementById('latitude').value =
+              position.coords.latitude.toFixed(4);
+            document.getElementById('longitude').value =
+              position.coords.longitude.toFixed(4);
+          },
+          error => {
+            console.log('Geolocation error:', error);
+          }
+        );
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      setCurrentDate();
+      getCurrentLocation();
+
+      const form = document.getElementById('trackingForm');
+      const messageDiv = document.getElementById('message');
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault(); // stop page navigation
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+          method: 'POST',
+          body: formData
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.result === 'success') {
+              messageDiv.className = 'success';
+              messageDiv.textContent = 'Location submitted successfully!';
+              form.reset();
+              setCurrentDate();
+              getCurrentLocation();
+            } else {
+              messageDiv.className = 'error';
+              messageDiv.textContent =
+                'Server error: ' + (data.message || 'Unknown error');
+            }
+          })
+          .catch(err => {
+            console.error(err);
+            messageDiv.className = 'error';
+            messageDiv.textContent =
+              'Network error submitting location. Please try again.';
+          });
+      });
     });
   </script>
 </body>
