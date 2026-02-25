@@ -259,32 +259,14 @@
       <p><strong>✅ No login required</strong> - Form is publicly accessible to everyone!</p>
     </div>
   </div>
-  <script>
+    <script>
     function setCurrentDate() {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('date').value = today;
+      ...
     }
-    function getCurrentLocation() {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(position => {
-          document.getElementById('latitude').value = position.coords.latitude.toFixed(4);
-          document.getElementById('longitude').value = position.coords.longitude.toFixed(4);
-        }, error => {
-          console.log('Geolocation error:', error);
-        });
-      }
-    }
-    window.addEventListener('DOMContentLoaded', () => {
-      setCurrentDate();
-      getCurrentLocation();
-    });
+    ...
     document.getElementById('trackingForm').addEventListener('submit', function(e) {
       // Let formspree handle it, just show message after
-      setTimeout(() => {
-        const messageDiv = document.getElementById('message');
-        messageDiv.className = 'success';
-        messageDiv.textContent = 'Location submitted successfully!';
-      }, 500);
+      ...
     });
   </script>
 </body>
