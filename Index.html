@@ -298,20 +298,20 @@
           </div>
         </div>
 
-        <!-- Single City + State box -->
+        <!-- Single City box -->
         <div class="form-row">
           <div class="form-group">
-            <label for="cityState"><i class="fas fa-city"></i> City & State</label>
+            <label for="city"><i class="fas fa-city"></i> City</label>
             <input
               type="text"
-              id="cityState"
-              name="CityState"
+              id="city"
+              name="City"
               readonly
               placeholder="Auto-filled from location"
             >
           </div>
         </div>
-        <!-- End CityState -->
+        <!-- End City -->
 
         <div class="form-group">
           <label for="remarks"><i class="fas fa-comment"></i> Remarks</label>
@@ -373,25 +373,9 @@
               addr.suburb ||
               '';
 
-            const state =
-              addr.state ||
-              addr.state_district ||
-              addr.region ||
-              addr.county ||
-              '';
-
-            let combined = '';
-            if (city && state) {
-              combined = city + ', ' + state;
-            } else if (city) {
-              combined = city;
-            } else if (state) {
-              combined = state;
-            }
-
-            document.getElementById('cityState').value = combined;
+            document.getElementById('city').value = city;
           } else {
-            document.getElementById('cityState').value = '';
+            document.getElementById('city').value = '';
           }
         })
         .catch(err => {
