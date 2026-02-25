@@ -127,84 +127,84 @@
 <div class="form-card">
 <form id="trackingForm" method="POST" action="<?= scriptUrl ?>">
 
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-user"></i> Engineer Name</label>
-<input type="text" name="Engineer Name" required>
-</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label><i class="fas fa-user"></i> Engineer Name</label>
+      <input type="text" name="Engineer Name" required>
+    </div>
 
-<div class="form-group">
-<label><i class="fas fa-id-card"></i> Employee ID</label>
-<input type="text" name="Employee ID" required>
-</div>
-</div>
+    <div class="form-group">
+      <label><i class="fas fa-id-card"></i> Employee ID</label>
+      <input type="text" name="Employee ID" required>
+    </div>
+  </div>
 
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-ticket-alt"></i> Ticket ID</label>
-<input type="text" name="Ticket ID" required>
-</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label><i class="fas fa-ticket-alt"></i> Ticket ID</label>
+      <input type="text" name="Ticket ID" required>
+    </div>
 
-<div class="form-group">
-<label><i class="fas fa-calendar"></i> Date</label>
-<input type="date" id="date" name="Date" required>
-</div>
-</div>
+    <div class="form-group">
+      <label><i class="fas fa-calendar"></i> Date</label>
+      <input type="date" id="date" name="Date" required>
+    </div>
+  </div>
 
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-clock"></i> Login Time</label>
-<input type="time" name="Login Time" required>
-</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label><i class="fas fa-clock"></i> Login Time</label>
+      <input type="time" name="Login Time" required>
+    </div>
 
-<div class="form-group">
-<label><i class="fas fa-briefcase"></i> Shift</label>
-<select name="Shift" required>
-<option value="">Select</option>
-<option value="Day">Day</option>
-<option value="Night">Night</option>
-</select>
-</div>
-</div>
+    <div class="form-group">
+      <label><i class="fas fa-briefcase"></i> Shift</label>
+      <select name="Shift" required>
+        <option value="">Select</option>
+        <option value="Day">Day</option>
+        <option value="Night">Night</option>
+      </select>
+    </div>
+  </div>
 
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-tasks"></i> Status</label>
-<select name="Status" required>
-<option value="">Select</option>
-<option value="En Route">En Route</option>
-<option value="On Site">On Site</option>
-<option value="Completed">Completed</option>
-<option value="Delayed">Delayed</option>
-</select>
-</div>
-</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label><i class="fas fa-tasks"></i> Status</label>
+      <select name="Status" required>
+        <option value="">Select</option>
+        <option value="En Route">En Route</option>
+        <option value="On Site">On Site</option>
+        <option value="Completed">Completed</option>
+        <option value="Delayed">Delayed</option>
+      </select>
+    </div>
+  </div>
 
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-location-dot"></i> Latitude</label>
-<input type="text" id="latitude" name="Latitude" readonly required>
-</div>
+  <div class="form-row">
+    <div class="form-group">
+      <label><i class="fas fa-location-dot"></i> Latitude</label>
+      <input type="text" id="latitude" name="Latitude" readonly required>
+    </div>
 
-<div class="form-group">
-<label><i class="fas fa-location-dot"></i> Longitude</label>
-<input type="text" id="longitude" name="Longitude" readonly required>
-</div>
-</div>
+    <div class="form-group">
+      <label><i class="fas fa-location-dot"></i> Longitude</label>
+      <input type="text" id="longitude" name="Longitude" readonly required>
+    </div>
+  </div>
 
-<div class="form-group">
-<label><i class="fas fa-city"></i> City</label>
-<input type="text" id="city" name="City" readonly>
-</div>
+  <div class="form-group">
+    <label><i class="fas fa-city"></i> City</label>
+    <input type="text" id="city" name="City" readonly>
+  </div>
 
-<div class="form-group">
-<label><i class="fas fa-comment"></i> Remarks</label>
-<textarea name="Remarks"></textarea>
-</div>
+  <div class="form-group">
+    <label><i class="fas fa-comment"></i> Remarks</label>
+    <textarea name="Remarks"></textarea>
+  </div>
 
-<button type="submit" class="submit-btn">
-<i class="fas fa-paper-plane"></i> Submit Location
-</button>
+  <button type="submit" class="submit-btn">
+    <i class="fas fa-paper-plane"></i> Submit Location
+  </button>
 
 </form>
 
@@ -214,56 +214,74 @@
 
 <script>
 function setCurrentDate() {
-document.getElementById('date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('date').value =
+    new Date().toISOString().split('T')[0];
 }
 
 function getLocation() {
-if (navigator.geolocation) {
-navigator.geolocation.getCurrentPosition(position => {
-const lat = position.coords.latitude;
-const lon = position.coords.longitude;
-document.getElementById('latitude').value = lat.toFixed(4);
-document.getElementById('longitude').value = lon.toFixed(4);
-reverseGeocode(lat, lon);
-});
-}
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      position => {
+        const lat = position.coords.latitude;
+        const lon = position.coords.longitude;
+        document.getElementById('latitude').value = lat.toFixed(4);
+        document.getElementById('longitude').value = lon.toFixed(4);
+        reverseGeocode(lat, lon);
+      },
+      error => {
+        console.error('Geolocation error:', error);
+      }
+    );
+  }
 }
 
 function reverseGeocode(lat, lon) {
-fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
-.then(res => res.json())
-.then(data => {
-if (data.address) {
-document.getElementById('city').value =
-data.address.city ||
-data.address.town ||
-data.address.village || '';
-}
-});
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lon}`)
+    .then(res => res.json())
+    .then(data => {
+      if (data.address) {
+        document.getElementById('city').value =
+          data.address.city ||
+          data.address.town ||
+          data.address.village || '';
+      }
+    })
+    .catch(err => {
+      console.error('Reverse geocode error:', err);
+    });
 }
 
 document.getElementById('trackingForm').addEventListener('submit', function(e) {
-e.preventDefault();
-const formData = new FormData(this);
+  e.preventDefault();
+  const formData = new FormData(this);
 
-fetch("<?= scriptUrl ?>", {
-method: "POST",
-body: formData
-})
-.then(res => res.json())
-.then(data => {
-const msg = document.getElementById('message');
-if (data.result === "success") {
-msg.className = "success";
-msg.textContent = "Location submitted successfully!";
-this.reset();
-setCurrentDate();
-getLocation();
-} else {
-msg.className = "error";
-msg.textContent = "Server error: " + data.message;
-}
-});
+  fetch("<?= scriptUrl ?>", {
+    method: "POST",
+    body: formData
+  })
+    .then(res => res.json())
+    .then(data => {
+      const msg = document.getElementById('message');
+      if (data.result === "success") {
+        msg.className = "success";
+        msg.textContent = "Location submitted successfully!";
+        msg.style.display = "block";
+        this.reset();
+        setCurrentDate();
+        getLocation();
+      } else {
+        msg.className = "error";
+        msg.textContent = "Server error: " + (data.message || "Unknown error");
+        msg.style.display = "block";
+      }
+    })
+    .catch(err => {
+      console.error('Fetch error:', err);
+      const msg = document.getElementById('message');
+      msg.className = "error";
+      msg.textContent = "Network error submitting location. Please try again.";
+      msg.style.display = "block";
+    });
 });
 
 setCurrentDate();
