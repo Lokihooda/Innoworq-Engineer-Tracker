@@ -348,7 +348,7 @@
       document.getElementById('date').value = today;
     }
 
-    // Reverse geocode using OpenStreetMap Nominatim
+    // Reverse geocode using OpenStreetMap Nominatim (city only)
     function reverseGeocode(lat, lon) {
       const url =
         'https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=' +
@@ -385,6 +385,7 @@
         });
     }
 
+    // Improved geolocation
     function getCurrentLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -392,15 +393,25 @@
             const lat = position.coords.latitude;
             const lon = position.coords.longitude;
 
+            console.log('Accuracy (m):', position.coords.accuracy);
+
             document.getElementById('latitude').value = lat.toFixed(4);
             document.getElementById('longitude').value = lon.toFixed(4);
 
             reverseGeocode(lat, lon);
           },
           error => {
-            console.log('Geolocation error:', error);
+            console.error('Geolocation error:', error);
+            alert('Cannot get GPS location: ' + error.message);
+          },
+          {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
           }
         );
+      } else {
+        alert('Geolocation is not supported on this device/browser.');
       }
     }
 
@@ -413,3 +424,44 @@
 
       form.addEventListener('submit', function (e) {
         e.preventDefault();
+
+        const formData = new FormData(form);
+
+        fetch(form.action, {
+          method: 'POST',
+          body: formData
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data.result === 'success') {
+              messageDiv.className = 'success';
+              messageDiv.textContent = 'Location submitted successfully!';
+              messageDiv.style.display = 'block';
+
+              setTimeout(() => {
+                form.reset();
+                setCurrentDate();
+                getCurrentLocation();
+                messageDiv.className = '';
+                messageDiv.textContent = '';
+                messageDiv.style.display = 'none';
+              }, 5000);
+            } else {
+              messageDiv.className = 'error';
+              messageDiv.textContent =
+                'Server error: ' + (data.message || 'Unknown error');
+              messageDiv.style.display = 'block';
+            }
+          })
+          .catch(err => {
+            console.error(err);
+            messageDiv.className = 'error';
+            messageDiv.textContent =
+              'Network error submitting location. Please try again.';
+            messageDiv.style.display = 'block';
+          });
+      });
+    });
+  </script>
+</body>
+</html>
