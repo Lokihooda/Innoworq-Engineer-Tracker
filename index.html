@@ -165,7 +165,7 @@ window.onload = () => {
             return;
         }
 
-        message.innerHTML = "⏳ Sending to Supabase...";
+        message.innerHTML = "⏳ Sending to database...";
         message.className = "";
         message.style.display = "block";
 
@@ -192,11 +192,11 @@ window.onload = () => {
 
         if (error) {
             message.className = "error";
-            message.innerHTML = "❌ Supabase Error: " + error.message;
+            message.innerHTML = "❌ database Error: " + error.message;
             console.error(error);
         } else {
             message.className = "success";
-            message.innerHTML = "✅ Data saved to Supabase successfully!";
+            message.innerHTML = "✅ Data saved to database successfully!";
             form.reset();
             setCurrentDate();
             // Don't hide message immediately so user can see success
