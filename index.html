@@ -1,442 +1,102 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Innoworq Engineer Tracking</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      min-height: 100vh;
-      padding: 20px;
-    }
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-    }
-    header {
-      background: rgba(255, 255, 255, 0.95);
-      padding: 30px;
-      border-radius: 10px;
-      margin-bottom: 30px;
-      text-align: center;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    }
-    header h1 {
-      color: #667eea;
-      font-size: 28px;
-      margin: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    header h1 i {
-      font-size: 32px;
-    }
-    .form-card {
-      background: rgba(255, 255, 255, 0.95);
-      padding: 30px;
-      border-radius: 10px;
-      margin-bottom: 30px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    }
-    .form-card h2 {
-      color: #333;
-      margin-bottom: 25px;
-      font-size: 22px;
-    }
-    .form-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-    .form-group label {
-      font-weight: 600;
-      margin-bottom: 8px;
-      color: #333;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .form-group label i {
-      color: #667eea;
-      font-size: 18px;
-    }
-    .form-group input,
-    .form-group select,
-    .form-group textarea {
-      padding: 12px;
-      border: 2px solid #e0e0e0;
-      border-radius: 6px;
-      font-size: 14px;
-      font-family: inherit;
-      transition: border-color 0.3s;
-    }
-    .form-group input:focus,
-    .form-group select:focus,
-    .form-group textarea:focus {
-      outline: none;
-      border-color: #667eea;
-    }
-    .submit-btn {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 14px 40px;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-    }
-    .submit-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-    }
-    .submit-btn i {
-      font-size: 18px;
-    }
-    #message {
-      margin-top: 15px;
-      padding: 12px;
-      border-radius: 6px;
-      text-align: center;
-      display: none;
-    }
-    #message.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-      display: block;
-    }
-    #message.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-      display: block;
-    }
-    .info-card {
-      background: rgba(255, 255, 255, 0.95);
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    }
-    .info-card h3 {
-      color: #667eea;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .info-card h3 i {
-      font-size: 24px;
-    }
-    .info-card p {
-      color: #555;
-      margin-bottom: 15px;
-      line-height: 1.6;
-    }
-    .info-card a {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      color: #667eea;
-      text-decoration: none;
-      font-weight: 600;
-      transition: color 0.3s;
-    }
-    .info-card a:hover {
-      color: #764ba2;
-    }
-    @media (max-width: 600px) {
-      .form-row {
-        grid-template-columns: 1fr;
-      }
-      header h1 {
-        font-size: 22px;
-      }
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>
-        <i class="fas fa-map-marker-alt"></i>
-        Innoworq Engineer Tracking
-      </h1>
-    </header>
+<script>
+  function setCurrentDate() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').value = today;
+  }
 
-    <div class="form-card">
-      <h2>Submit Engineer Location</h2>
+  function setCityFromLatLng(lat, lng) {
+    const cityInput = document.getElementById('city');
 
-      <!-- FORM START -->
-      <form
-        id="trackingForm"
-        method="POST"
-        action="https://script.google.com/macros/s/AKfycbxLAANRF-ptWa4tn8kcn0LNhlNh5rTfIB4K_CTgTi6_XiK2i-379mvIumN8LB5AI49XhA/exec"
-      >
-        <div class="form-row">
-          <div class="form-group">
-            <label for="engineer"><i class="fas fa-user"></i> Engineer Name</label>
-            <input
-              type="text"
-              id="engineer"
-              name="engineer"
-              required
-              placeholder="Enter engineer name"
-            >
-          </div>
-          <div class="form-group">
-            <label for="empId"><i class="fas fa-id-card"></i> Employee ID</label>
-            <input
-              type="text"
-              id="empId"
-              name="employeeId"
-              required
-              placeholder="Enter employee ID"
-            >
-          </div>
-        </div>
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+      .then(res => res.json())
+      .then(data => {
+        const addr = data.address || {};
+        const city =
+          addr.city ||
+          addr.town ||
+          addr.village ||
+          addr.suburb ||
+          addr.county ||
+          'Unknown';
+        cityInput.value = city;
+      })
+      .catch(() => {
+        cityInput.value = 'Unknown';
+      });
+  }
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="ticketId"><i class="fas fa-ticket-alt"></i> Ticket ID</label>
-            <input
-              type="text"
-              id="ticketId"
-              name="ticketId"
-              placeholder="Enter ticket ID"
-            >
-          </div>
-          <div class="form-group">
-            <label for="date"><i class="fas fa-calendar"></i> Date</label>
-            <input
-              type="date"
-              id="date"
-              name="Date"
-              required
-            >
-          </div>
-        </div>
+  function getCurrentLocation() {
+    const latInput = document.getElementById('latitude');
+    const lngInput = document.getElementById('longitude');
+    const cityInput = document.getElementById('city');
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="time"><i class="fas fa-clock"></i> Login Time</label>
-            <input
-              type="time"
-              id="time"
-              name="loginTime"
-              required
-            >
-          </div>
-          <div class="form-group">
-            <label for="shift"><i class="fas fa-briefcase"></i> Shift</label>
-            <select id="shift" name="Shift" required>
-              <option value="">Select shift</option>
-              <option value="Day">Day</option>
-              <option value="Night">Night</option>
-            </select>
-          </div>
-        </div>
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        position => {
+          const lat = position.coords.latitude.toFixed(6);
+          const lng = position.coords.longitude.toFixed(6);
 
-        <div class="form-row">
-          <div class="form-group">
-            <label for="status"><i class="fas fa-tasks"></i> Status</label>
-            <select id="status" name="Status" required>
-              <option value="">Select status</option>
-              <option value="Assigned">Assigned</option>
-              <option value="On Hold">On Hold</option>
-              <option value="On Leave">On leave</option>
-              <option value="Available">Available</option>
-              <option value="Travelling">Travelling</option>
-            </select>
-          </div>
-        </div>
+          latInput.value = lat;
+          lngInput.value = lng;
+          cityInput.value = 'Detecting city...';
 
-        <!-- Lat/Long read-only -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="latitude"><i class="fas fa-location-dot"></i> Latitude</label>
-            <input
-              type="number"
-              id="latitude"
-              name="Latitude"
-              step="0.0001"
-              required
-              placeholder="28.5355"
-              readonly
-            >
-          </div>
-          <div class="form-group">
-            <label for="longitude"><i class="fas fa-location-dot"></i> Longitude</label>
-            <input
-              type="number"
-              id="longitude"
-              name="Longitude"
-              step="0.0001"
-              required
-              placeholder="77.3910"
-              readonly
-            >
-          </div>
-        </div>
-
-        <!-- City only for display (not submitted, no name attribute) -->
-        <div class="form-row">
-          <div class="form-group">
-            <label for="city"><i class="fas fa-city"></i> City (auto-detected)</label>
-            <input
-              type="text"
-              id="city"
-              placeholder="Detecting city..."
-              readonly
-            >
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="remarks"><i class="fas fa-comment"></i> Remarks</label>
-          <textarea
-            id="remarks"
-            name="Remarks"
-            rows="4"
-            placeholder="Enter any remarks..."
-          ></textarea>
-        </div>
-
-        <button type="submit" class="submit-btn">
-          <i class="fas fa-paper-plane"></i>
-          Submit Location
-        </button>
-      </form>
-      <!-- FORM END -->
-
-      <div id="message"></div>
-    </div>
-  </div>
-
-  <script>
-    function setCurrentDate() {
-      const today = new Date().toISOString().split('T')[0];
-      document.getElementById('date').value = today;
+          setCityFromLatLng(lat, lng);
+        },
+        () => {
+          cityInput.value = 'Location not available';
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      cityInput.value = 'Geolocation not supported';
     }
+  }
 
-    // Reverse geocode lat/lng to city using OpenStreetMap Nominatim
-    function setCityFromLatLng(lat, lng) {
-      const cityInput = document.getElementById('city');
+  window.addEventListener('DOMContentLoaded', () => {
+    setCurrentDate();
+    getCurrentLocation();
 
-      fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-        .then(res => res.json())
-        .then(data => {
-          const addr = data.address || {};
-          const city =
-            addr.city ||
-            addr.town ||
-            addr.village ||
-            addr.suburb ||
-            addr.county ||
-            'Unknown';
-          cityInput.value = city;
-        })
-        .catch(err => {
-          console.error('Reverse geocode error:', err);
-          cityInput.value = 'Unknown';
-        });
-    }
+    const form = document.getElementById('trackingForm');
+    const messageDiv = document.getElementById('message');
 
-    function getCurrentLocation() {
-      const latInput = document.getElementById('latitude');
-      const lngInput = document.getElementById('longitude');
-      const cityInput = document.getElementById('city');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          position => {
-            const lat = position.coords.latitude.toFixed(4);
-            const lng = position.coords.longitude.toFixed(4);
-            latInput.value = lat;
-            lngInput.value = lng;
-            cityInput.value = 'Detecting city...';
-            setCityFromLatLng(lat, lng);
-          },
-          error => {
-            console.log('Geolocation error:', error);
-            cityInput.value = 'Location not available';
-          }
-        );
-      } else {
-        cityInput.value = 'Geolocation not supported';
-      }
-    }
+      messageDiv.textContent = "⏳ Submitting...";
+      messageDiv.className = "";
+      messageDiv.style.display = "block";
 
-    window.addEventListener('DOMContentLoaded', () => {
-      setCurrentDate();
-      getCurrentLocation();
+      const formData = new FormData(form);
 
-      const form = document.getElementById('trackingForm');
-      const messageDiv = document.getElementById('message');
+      fetch(form.action, {
+        method: 'POST',
+        body: formData
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.result === 'success') {
+          messageDiv.className = 'success';
+          messageDiv.textContent = '✅ Location submitted successfully!';
 
-      form.addEventListener('submit', function (e) {
-        e.preventDefault(); // stop page navigation
-
-        const formData = new FormData(form); // city is not included (no name attr)
-
-        fetch(form.action, {
-          method: 'POST',
-          body: formData
-        })
-          .then(res => res.json())
-          .then(data => {
-            if (data.result === 'success') {
-              messageDiv.className = 'success';
-              messageDiv.textContent = 'Location submitted successfully!';
-              messageDiv.style.display = 'block';
-
-              // wait 5 seconds, then reset form and hide message
-              setTimeout(() => {
-                form.reset();
-                setCurrentDate();
-                getCurrentLocation();
-                messageDiv.className = '';
-                messageDiv.textContent = '';
-                messageDiv.style.display = 'none';
-              }, 5000);
-            } else {
-              messageDiv.className = 'error';
-              messageDiv.textContent =
-                'Server error: ' + (data.message || 'Unknown error');
-              messageDiv.style.display = 'block';
-            }
-          })
-          .catch(err => {
-            console.error(err);
-            messageDiv.className = 'error';
-            messageDiv.textContent =
-              'Network error submitting location. Please try again.';
-            messageDiv.style.display = 'block';
-          });
+          setTimeout(() => {
+            form.reset();
+            setCurrentDate();
+            getCurrentLocation();
+            messageDiv.style.display = 'none';
+          }, 4000);
+        } else {
+          messageDiv.className = 'error';
+          messageDiv.textContent = '❌ Server error: ' + (data.message || '');
+        }
+      })
+      .catch(() => {
+        messageDiv.className = 'error';
+        messageDiv.textContent = '❌ Network error. Please try again.';
       });
     });
-  </script>
-  <script src="main.js"></script>
-</body>
-</html>
+  });
+</script>
