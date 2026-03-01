@@ -139,8 +139,7 @@ async function getAddressFromCoords(lat, lng) {
       headers: {
         'Content-Type': 'application/json',
       },
-      body: 119
-        (data)
+      body: JSON.stringify(data)
     });
     
     messageDiv.textContent = '✅ Location submitted successfully!';
