@@ -1,4 +1,4 @@
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw37JSrrOp-i8Xs_F_lnRxj58VOMn3H_rJgTnWMBBHKABWlL87degckrEK-gVEV_9hTRA/exec';
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwx_TgHs9HvnWpkzUziwpSuzITFXuXCnKyPCMCPW9d-VV6fydVO1Xm-_4T3udKnKMon9w/exec';
 
 let currentLocation = {
   latitude: null,
