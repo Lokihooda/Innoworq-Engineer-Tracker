@@ -143,7 +143,8 @@ document.getElementById('trackingForm').addEventListener('submit', async (e) => 
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data)
+      body: 119
+        (data)
     });
     
     messageDiv.textContent = '✅ Location submitted successfully!';
