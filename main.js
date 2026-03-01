@@ -99,10 +99,6 @@ async function getAddressFromCoords(lat, lng) {
   }
 }
 
-// Form submission
-document.getElementById('trackingForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  
   const messageDiv = document.getElementById('message');
   const form = e.target;
   const formData = new FormData(form);
