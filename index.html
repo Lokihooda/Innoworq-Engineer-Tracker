@@ -1,102 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Innoworq Engineer Tracking</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height:100vh;
+  padding:20px;
+}
+
+.container { max-width:800px; margin:0 auto; }
+
+header {
+  background:white;
+  padding:30px;
+  border-radius:12px;
+  margin-bottom:30px;
+  text-align:center;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+header h1 {
+  color:#667eea;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:10px;
+}
+
+.form-card {
+  background:white;
+  padding:30px;
+  border-radius:12px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.2);
+}
+
+.form-row {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:15px;
+  margin-bottom:20px;
+}
+
+.form-group { display:flex; flex-direction:column; }
+
+.form-group label {
+  font-weight:600;
+  margin-bottom:6px;
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding:12px;
+  border:2px solid #e0e0e0;
+  border-radius:8px;
+  font-size:14px;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline:none;
+  border-color:#667eea;
+}
+
+textarea { resize:vertical; }
+
+.submit-btn {
+  width:100%;
+  padding:15px;
+  background:linear-gradient(135deg,#667eea,#764ba2);
+  color:white;
+  border:none;
+  border-radius:8px;
+  font-size:16px;
+  cursor:pointer;
+  font-weight:600;
+}
+
+.submit-btn:hover {
+  transform:translateY(-2px);
+  box-shadow:0 5px 15px rgba(102,126,234,0.4);
+}
+
+#message {
+  margin-top:15px;
+  padding:12px;
+  border-radius:8px;
+  display:none;
+  text-align:center;
+  font-weight:600;
+}
+
+.success { background:#d1fae5; color:#065f46; display:block; }
+.error { background:#fee2e2; color:#991b1b; display:block; }
+
+@media(max-width:600px){
+  .form-row{ grid-template-columns:1fr; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<header>
+<h1><i class="fas fa-map-marker-alt"></i> Innoworq Engineer Tracking</h1>
+</header>
+
+<div class="form-card">
+
+<form id="trackingForm"
+method="POST"
+action="https://script.google.com/macros/s/AKfycbxLAANRF-ptWa4tn8kcn0LNhlNh5rTfIB4K_CTgTi6_XiK2i-379mvIumN8LB5AI49XhA/exec">
+
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-user"></i> Engineer Name</label>
+<input type="text" name="engineer" required>
+</div>
+
+<div class="form-group">
+<label><i class="fas fa-id-card"></i> Employee ID</label>
+<input type="text" name="employeeId" required>
+</div>
+</div>
+
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-ticket-alt"></i> Ticket ID</label>
+<input type="text" name="ticketId">
+</div>
+
+<div class="form-group">
+<label><i class="fas fa-calendar"></i> Date</label>
+<input type="date" id="date" name="Date" required>
+</div>
+</div>
+
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-clock"></i> Login Time</label>
+<input type="time" name="loginTime" required>
+</div>
+
+<div class="form-group">
+<label><i class="fas fa-briefcase"></i> Shift</label>
+<select name="Shift" required>
+<option value="">Select</option>
+<option>Day</option>
+<option>Night</option>
+</select>
+</div>
+</div>
+
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-tasks"></i> Status</label>
+<select name="Status" required>
+<option value="">Select</option>
+<option>Assigned</option>
+<option>On Hold</option>
+<option>On Leave</option>
+<option>Available</option>
+<option>Travelling</option>
+</select>
+</div>
+</div>
+
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-location-dot"></i> Latitude</label>
+<input type="text" id="latitude" name="Latitude" readonly required>
+</div>
+
+<div class="form-group">
+<label><i class="fas fa-location-dot"></i> Longitude</label>
+<input type="text" id="longitude" name="Longitude" readonly required>
+</div>
+</div>
+
+<div class="form-row">
+<div class="form-group">
+<label><i class="fas fa-city"></i> City (Auto)</label>
+<input type="text" id="city" readonly>
+</div>
+</div>
+
+<div class="form-group">
+<label><i class="fas fa-comment"></i> Remarks</label>
+<textarea name="Remarks"></textarea>
+</div>
+
+<button type="submit" class="submit-btn">
+<i class="fas fa-paper-plane"></i> Submit Location
+</button>
+
+</form>
+
+<div id="message"></div>
+
+</div>
+</div>
+
 <script>
-  function setCurrentDate() {
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('date').value = today;
-  }
+function setCurrentDate(){
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('date').value = today;
+}
 
-  function setCityFromLatLng(lat, lng) {
-    const cityInput = document.getElementById('city');
+function setCity(lat,lng){
+ fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
+ .then(res=>res.json())
+ .then(data=>{
+   const addr=data.address||{};
+   document.getElementById('city').value=
+   addr.city||addr.town||addr.village||addr.county||"Unknown";
+ })
+ .catch(()=>{ document.getElementById('city').value="Unknown"; });
+}
 
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
-      .then(res => res.json())
-      .then(data => {
-        const addr = data.address || {};
-        const city =
-          addr.city ||
-          addr.town ||
-          addr.village ||
-          addr.suburb ||
-          addr.county ||
-          'Unknown';
-        cityInput.value = city;
-      })
-      .catch(() => {
-        cityInput.value = 'Unknown';
-      });
-  }
-
-  function getCurrentLocation() {
-    const latInput = document.getElementById('latitude');
-    const lngInput = document.getElementById('longitude');
-    const cityInput = document.getElementById('city');
-
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        position => {
-          const lat = position.coords.latitude.toFixed(6);
-          const lng = position.coords.longitude.toFixed(6);
-
-          latInput.value = lat;
-          lngInput.value = lng;
-          cityInput.value = 'Detecting city...';
-
-          setCityFromLatLng(lat, lng);
-        },
-        () => {
-          cityInput.value = 'Location not available';
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0
-        }
-      );
-    } else {
-      cityInput.value = 'Geolocation not supported';
-    }
-  }
-
-  window.addEventListener('DOMContentLoaded', () => {
-    setCurrentDate();
-    getCurrentLocation();
-
-    const form = document.getElementById('trackingForm');
-    const messageDiv = document.getElementById('message');
-
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-
-      messageDiv.textContent = "⏳ Submitting...";
-      messageDiv.className = "";
-      messageDiv.style.display = "block";
-
-      const formData = new FormData(form);
-
-      fetch(form.action, {
-        method: 'POST',
-        body: formData
-      })
-      .then(res => res.json())
-      .then(data => {
-        if (data.result === 'success') {
-          messageDiv.className = 'success';
-          messageDiv.textContent = '✅ Location submitted successfully!';
-
-          setTimeout(() => {
-            form.reset();
-            setCurrentDate();
-            getCurrentLocation();
-            messageDiv.style.display = 'none';
-          }, 4000);
-        } else {
-          messageDiv.className = 'error';
-          messageDiv.textContent = '❌ Server error: ' + (data.message || '');
-        }
-      })
-      .catch(() => {
-        messageDiv.className = 'error';
-        messageDiv.textContent = '❌ Network error. Please try again.';
-      });
-    });
+function getLocation(){
+ if(navigator.geolocation){
+  navigator.geolocation.getCurrentPosition(pos=>{
+   const lat=pos.coords.latitude.toFixed(6);
+   const lng=pos.coords.longitude.toFixed(6);
+   document.getElementById('latitude').value=lat;
+   document.getElementById('longitude').value=lng;
+   setCity(lat,lng);
   });
+ }
+}
+
+window.onload=()=>{
+ setCurrentDate();
+ getLocation();
+
+ const form=document.getElementById('trackingForm');
+ const message=document.getElementById('message');
+
+ form.addEventListener('submit',function(e){
+  e.preventDefault();
+  message.innerHTML="⏳ Submitting...";
+  message.className="";
+  message.style.display="block";
+
+  const formData=new FormData(form);
+
+  fetch(form.action,{ method:"POST", body:formData })
+  .then(res=>res.json())
+  .then(data=>{
+   if(data.result==="success"){
+    message.className="success";
+    message.innerHTML="✅ Location submitted successfully!";
+    setTimeout(()=>{
+      form.reset();
+      setCurrentDate();
+      getLocation();
+      message.style.display="none";
+    },4000);
+   }else{
+    message.className="error";
+    message.innerHTML="❌ Server Error";
+   }
+  })
+  .catch(()=>{
+   message.className="error";
+   message.innerHTML="❌ Network Error. Try again.";
+  });
+ });
+};
 </script>
+
+</body>
+</html>
