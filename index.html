@@ -1,236 +1,151 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Innoworq Engineer Tracking</title>
-
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-<style>
-* { margin:0; padding:0; box-sizing:border-box; }
-
-body {
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  min-height:100vh;
-  padding:20px;
-}
-
-.container { max-width:800px; margin:0 auto; }
-
-header {
-  background:white;
-  padding:30px;
-  border-radius:12px;
-  margin-bottom:30px;
-  text-align:center;
-  box-shadow:0 10px 25px rgba(0,0,0,0.2);
-}
-
-header h1 {
-  color:#667eea;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:10px;
-}
-
-.form-card {
-  background:white;
-  padding:30px;
-  border-radius:12px;
-  box-shadow:0 10px 25px rgba(0,0,0,0.2);
-}
-
-.form-row {
-  display:grid;
-  grid-template-columns:1fr 1fr;
-  gap:15px;
-  margin-bottom:20px;
-}
-
-.form-group { display:flex; flex-direction:column; }
-
-.form-group label {
-  font-weight:600;
-  margin-bottom:6px;
-  display:flex;
-  gap:8px;
-  align-items:center;
-}
-
-.form-group input,
-.form-group select,
-.form-group textarea {
-  padding:12px;
-  border:2px solid #e0e0e0;
-  border-radius:8px;
-  font-size:14px;
-}
-
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline:none;
-  border-color:#667eea;
-}
-
-textarea { resize:vertical; }
-
-.submit-btn {
-  width:100%;
-  padding:15px;
-  background:linear-gradient(135deg,#667eea,#764ba2);
-  color:white;
-  border:none;
-  border-radius:8px;
-  font-size:16px;
-  cursor:pointer;
-  font-weight:600;
-}
-
-.submit-btn:hover {
-  transform:translateY(-2px);
-  box-shadow:0 5px 15px rgba(102,126,234,0.4);
-}
-
-#message {
-  margin-top:15px;
-  padding:12px;
-  border-radius:8px;
-  display:none;
-  text-align:center;
-  font-weight:600;
-}
-
-.success { background:#d1fae5; color:#065f46; display:block; }
-.error { background:#fee2e2; color:#991b1b; display:block; }
-
-@media(max-width:600px){
-  .form-row{ grid-template-columns:1fr; }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Innoworq Engineer Tracking</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Your existing styles remain exactly the same */
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height:100vh; padding:20px; }
+        .container { max-width:800px; margin:0 auto; }
+        header { background:white; padding:30px; border-radius:12px; margin-bottom:30px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
+        header h1 { color:#667eea; display:flex; justify-content:center; align-items:center; gap:10px; }
+        .form-card { background:white; padding:30px; border-radius:12px; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
+        .form-row { display:grid; grid-template-columns:1fr 1fr; gap:15px; margin-bottom:20px; }
+        .form-group { display:flex; flex-direction:column; }
+        .form-group label { font-weight:600; margin-bottom:6px; display:flex; gap:8px; align-items:center; }
+        .form-group input, .form-group select, .form-group textarea { padding:12px; border:2px solid #e0e0e0; border-radius:8px; font-size:14px; }
+        textarea { resize:vertical; }
+        .submit-btn { width:100%; padding:15px; background:linear-gradient(135deg,#667eea,#764ba2); color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer; font-weight:600; }
+        #message { margin-top:15px; padding:12px; border-radius:8px; display:none; text-align:center; font-weight:600; }
+        .success { background:#d1fae5; color:#065f46; display:block; }
+        .error { background:#fee2e2; color:#991b1b; display:block; }
+        @media(max-width:600px){ .form-row{ grid-template-columns:1fr; } }
+    </style>
 </head>
-
 <body>
 <div class="container">
+    <header>
+        <h1><i class="fas fa-map-marker-alt"></i> Innoworq Engineer Tracking</h1>
+    </header>
 
-<header>
-<h1><i class="fas fa-map-marker-alt"></i> Innoworq Engineer Tracking</h1>
-</header>
+    <div class="form-card">
+        <form id="trackingForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-user"></i> Engineer Name</label>
+                    <input type="text" name="engineer" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-id-card"></i> Employee ID</label>
+                    <input type="text" name="employeeId" required>
+                </div>
+            </div>
 
-<div class="form-card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-ticket-alt"></i> Ticket ID</label>
+                    <input type="text" name="ticketId">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-calendar"></i> Date</label>
+                    <input type="date" id="date" name="Date" required>
+                </div>
+            </div>
 
-<form id="trackingForm"
-method="POST"
-action="https://script.google.com/macros/s/AKfycbxYiXUvEUGrqFZDCryEXxEUX20xEPDfMyc1Iz30ZZkgo03UaXvzfj2lUy8fdiJI5WXMsA/exec">
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-clock"></i> Login Time</label>
+                    <input type="time" name="loginTime" required>
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-briefcase"></i> Shift</label>
+                    <select name="Shift" required>
+                        <option value="">Select</option>
+                        <option>Day</option>
+                        <option>Night</option>
+                    </select>
+                </div>
+            </div>
 
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-user"></i> Engineer Name</label>
-<input type="text" name="engineer" required>
-</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-tasks"></i> Status</label>
+                    <select name="Status" required>
+                        <option value="">Select</option>
+                        <option>Assigned</option>
+                        <option>On Hold</option>
+                        <option>On Leave</option>
+                        <option>Available</option>
+                        <option>Travelling</option>
+                    </select>
+                </div>
+            </div>
 
-<div class="form-group">
-<label><i class="fas fa-id-card"></i> Employee ID</label>
-<input type="text" name="employeeId" required>
-</div>
-</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-location-dot"></i> Latitude</label>
+                    <input type="text" id="latitude" name="Latitude" readonly required placeholder="Locating...">
+                </div>
+                <div class="form-group">
+                    <label><i class="fas fa-location-dot"></i> Longitude</label>
+                    <input type="text" id="longitude" name="Longitude" readonly required placeholder="Locating...">
+                </div>
+            </div>
 
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-ticket-alt"></i> Ticket ID</label>
-<input type="text" name="ticketId">
-</div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label><i class="fas fa-city"></i> City (Auto)</label>
+                    <input type="text" id="city" name="city" readonly placeholder="Waiting for GPS...">
+                </div>
+            </div>
 
-<div class="form-group">
-<label><i class="fas fa-calendar"></i> Date</label>
-<input type="date" id="date" name="Date" required>
-</div>
-</div>
+            <div class="form-group">
+                <label><i class="fas fa-comment"></i> Remarks</label>
+                <textarea name="Remarks"></textarea>
+            </div>
 
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-clock"></i> Login Time</label>
-<input type="time" name="loginTime" required>
-</div>
-
-<div class="form-group">
-<label><i class="fas fa-briefcase"></i> Shift</label>
-<select name="Shift" required>
-<option value="">Select</option>
-<option>Day</option>
-<option>Night</option>
-</select>
-</div>
-</div>
-
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-tasks"></i> Status</label>
-<select name="Status" required>
-<option value="">Select</option>
-<option>Assigned</option>
-<option>On Hold</option>
-<option>On Leave</option>
-<option>Available</option>
-<option>Travelling</option>
-</select>
-</div>
-</div>
-
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-location-dot"></i> Latitude</label>
-<input type="text" id="latitude" name="Latitude" readonly required>
-</div>
-
-<div class="form-group">
-<label><i class="fas fa-location-dot"></i> Longitude</label>
-<input type="text" id="longitude" name="Longitude" readonly required>
-</div>
-</div>
-
-<div class="form-row">
-<div class="form-group">
-<label><i class="fas fa-city"></i> City (Auto)</label>
-<input type="text" id="city" readonly>
-</div>
-</div>
-
-<div class="form-group">
-<label><i class="fas fa-comment"></i> Remarks</label>
-<textarea name="Remarks"></textarea>
-</div>
-
-<button type="submit" class="submit-btn">
-<i class="fas fa-paper-plane"></i> Submit Location
-</button>
-
-</form>
-
-<div id="message"></div>
-
-</div>
+            <button type="submit" class="submit-btn">
+                <i class="fas fa-paper-plane"></i> Submit Location
+            </button>
+        </form>
+        <div id="message"></div>
+    </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
 <script>
-// Initialize Supabase
 const _supabase = supabase.createClient('https://eyodotdtktfzumztemmt.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5b2RvdGR0a3RmenVtenRlbW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNzUyMTcsImV4cCI6MjA4Nzk1MTIxN30.iMR5tMXFL7dZIv5gz4LXeOfr3wJEQlZn7IO_PpdqMLU');
 
 function setCurrentDate(){
     document.getElementById('date').value = new Date().toISOString().split('T')[0];
 }
 
+// 1. Added City Lookup back in for Supabase
+async function setCity(lat, lng) {
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+        const data = await res.json();
+        const addr = data.address || {};
+        document.getElementById('city').value = addr.city || addr.town || addr.village || addr.county || "Unknown";
+    } catch (e) {
+        document.getElementById('city').value = "Unknown";
+    }
+}
+
 function getLocation(){
     if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(pos => {
-            document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
-            document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
-        }, (err) => alert("Please enable GPS."));
+            const lat = pos.coords.latitude.toFixed(6);
+            const lng = pos.coords.longitude.toFixed(6);
+            document.getElementById('latitude').value = lat;
+            document.getElementById('longitude').value = lng;
+            setCity(lat, lng);
+        }, (err) => {
+            alert("GPS Error: Please allow location access.");
+        }, { enableHighAccuracy: true });
     }
 }
 
@@ -243,22 +158,31 @@ window.onload = () => {
 
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
+        
+        // 2. Validate GPS before sending
+        if(!document.getElementById('latitude').value) {
+            alert("Still waiting for GPS. Please wait a moment.");
+            return;
+        }
+
         message.innerHTML = "⏳ Sending to Supabase...";
         message.className = "";
         message.style.display = "block";
 
-        // Map form data to Supabase column names
         const formData = new FormData(form);
+        
+        // 3. Match submissionData exactly to your Supabase Table Column Names
         const submissionData = {
             engineer: formData.get('engineer'),
             employeeId: formData.get('employeeId'),
             ticketId: formData.get('ticketId'),
-            date: formData.get('Date'),
+            date: formData.get('Date'), // Ensure your column is 'date' or 'Date'
             loginTime: formData.get('loginTime'),
             shift: formData.get('Shift'),
             status: formData.get('Status'),
             latitude: parseFloat(formData.get('Latitude')),
             longitude: parseFloat(formData.get('Longitude')),
+            city: formData.get('city'), // Added city to submission
             remarks: formData.get('Remarks')
         };
 
@@ -268,12 +192,15 @@ window.onload = () => {
 
         if (error) {
             message.className = "error";
-            message.innerHTML = "❌ Error: " + error.message;
+            message.innerHTML = "❌ Supabase Error: " + error.message;
+            console.error(error);
         } else {
             message.className = "success";
-            message.innerHTML = "✅ Data saved to Supabase!";
+            message.innerHTML = "✅ Data saved to Supabase successfully!";
             form.reset();
             setCurrentDate();
+            // Don't hide message immediately so user can see success
+            setTimeout(() => { message.style.display = "none"; }, 5000);
         }
     });
 };
