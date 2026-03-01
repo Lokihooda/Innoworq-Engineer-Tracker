@@ -255,42 +255,33 @@ window.onload=()=>{
   const message=document.getElementById('message');
 
   form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    message.innerHTML = "⏳ Submitting to Google Sheets...";
-    message.className = "";
-    message.style.display = "block";
+  e.preventDefault();
+  message.innerHTML = "⏳ Submitting...";
+  message.className = "";
+  message.style.display = "block";
 
-    // 1. Convert FormData to URLSearchParams for better Apps Script compatibility
-    const formData = new FormData(form);
-    const params = new URLSearchParams();
-    for (const pair of formData) {
-        params.append(pair[0], pair[1]);
-    }
+  // Convert Form to URL encoded string
+  const scriptURL = form.action;
+  const formData = new URLSearchParams(new FormData(form));
 
-    // 2. Use 'no-cors' mode or standard fetch 
-    // Apps Script redirects can be tricky, so we handle the response carefully
-    fetch(form.action, {
-      method: "POST",
-      body: params,
-      mode: "no-cors" // This bypasses CORS errors, but we won't see the JSON result
-    })
-    .then(() => {
-      // Because 'no-cors' doesn't return the JSON result, 
-      // we assume success if the fetch doesn't throw.
-      message.className = "success";
-      message.innerHTML = "✅ Location submitted successfully!";
-      
-      setTimeout(() => {
-        form.reset();
-        setCurrentDate();
-        getLocation();
-        message.style.display = "none";
-      }, 4000);
-    })
-    .catch(err => {
-      message.className = "error";
-      message.innerHTML = "❌ Connection Error. Please check your internet.";
-      console.error(err);
+  fetch(scriptURL, { 
+    method: "POST", 
+    body: formData,
+    mode: "no-cors" // Crucial for Google Apps Script redirects
+  })
+  .then(() => {
+    // With no-cors, we can't read the JSON response, so we assume success
+    message.className = "success";
+    message.innerHTML = "✅ Submitted! Check your Google Sheet.";
+    form.reset();
+    setCurrentDate();
+    getLocation();
+  })
+  .catch(error => {
+    message.className = "error";
+    message.innerHTML = "❌ Error: " + error.message;
+  });
+});
     });
   });
 };
