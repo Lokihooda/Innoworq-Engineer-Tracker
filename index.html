@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Innoworq Engineer Tracking (Full Offline)</title>
+    <title>Innoworq Engineer Tracking (GPS Required)</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { margin:0; padding:0; box-sizing:border-box; }
@@ -12,8 +12,15 @@
         header { background:white; padding:30px; border-radius:12px; margin-bottom:20px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
         header h1 { color:#667eea; display:flex; justify-content:center; align-items:center; gap:10px; }
         
+        /* Permission Gate Styles */
+        #permissionGate { background: white; padding: 40px; border-radius: 12px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .gate-icon { font-size: 50px; color: #ef4444; margin-bottom: 20px; }
+        .gate-btn { background: #667eea; color: white; border: none; padding: 15px 30px; border-radius: 8px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        
+        #mainContent { display: none; } /* Hidden until permission is granted */
+
         /* Sync Panel */
-        .sync-panel { background:#fffbeb; border:1px solid #f59e0b; padding:15px; border-radius:12px; margin-bottom:20px; display:none; flex-direction:column; gap:10px; box-shadow:0 4px 6px rgba(0,0,0,0.1); }
+        .sync-panel { background:#fffbeb; border:1px solid #f59e0b; padding:15px; border-radius:12px; margin-bottom:20px; display:none; flex-direction:column; gap:10px; }
         .sync-header { display:flex; justify-content:space-between; align-items:center; }
         .sync-info { display:flex; align-items:center; gap:10px; color:#92400e; font-weight:600; font-size:14px; }
         .btn-group { display:flex; gap:8px; }
@@ -43,56 +50,68 @@
         <h1><i class="fas fa-satellite-dish"></i> Innoworq Engineer Tracking</h1>
     </header>
 
-    <div id="syncPanel" class="sync-panel">
-        <div class="sync-header">
-            <div class="sync-info">
-                <i class="fas fa-cloud-upload-alt"></i>
-                <span id="syncText">0 unsent records</span>
-            </div>
-            <div class="btn-group">
-                <button onclick="toggleRecordList()" class="btn-sm btn-view">Show Data</button>
-                <button onclick="syncDataManual()" class="btn-sm btn-sync">Sync Now</button>
-            </div>
+    <div id="permissionGate">
+        <div class="gate-icon"><i class="fas fa-location-arrow"></i></div>
+        <h2>Location Required</h2>
+        <p style="margin-top:10px; color:#666;">This app requires GPS access to track field status. Please click the button below and "Allow" when prompted.</p>
+        <button onclick="requestGPS()" class="gate-btn">Enable GPS & Open Form</button>
+        <div id="gateError" style="color:#ef4444; margin-top:15px; font-weight:bold; display:none;">
+            ❌ Permission Denied. Please enable location in your browser settings to continue.
         </div>
-        <div id="recordList"></div>
     </div>
 
-    <div class="form-card">
-        <form id="trackingForm">
-            <div class="form-row">
-                <div class="form-group"><label><i class="fas fa-user"></i> Engineer Name</label><input type="text" name="engineer" required></div>
-                <div class="form-group"><label><i class="fas fa-id-card"></i> Employee ID</label><input type="text" name="employeeId" required></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label><i class="fas fa-ticket-alt"></i> Ticket ID</label><input type="text" name="ticketId"></div>
-                <div class="form-group"><label><i class="fas fa-calendar"></i> Date</label><input type="date" id="date" name="date" required></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label><i class="fas fa-clock"></i> Login Time</label><input type="time" name="loginTime" required></div>
-                <div class="form-group"><label><i class="fas fa-briefcase"></i> Shift</label><select name="Shift" required><option value="">Select</option><option>Day</option><option>Night</option></select></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label><i class="fas fa-tasks"></i> Status</label><select name="Status" required><option value="">Select</option><option>Assigned</option><option>Available</option><option>Travelling</option><option>On Hold</option></select></div>
-            </div>
-            <div class="form-row">
-                <div class="form-group"><label><i class="fas fa-map-pin"></i> Latitude</label><input type="text" id="latitude" name="Latitude" readonly required></div>
-                <div class="form-group"><label><i class="fas fa-map-pin"></i> Longitude</label><input type="text" id="longitude" name="Longitude" readonly required></div>
-            </div>
-            
-            <div class="form-row">
-                <div class="form-group" style="grid-column: 1 / -1;">
-                    <label><i class="fas fa-city"></i> City (Auto)</label>
-                    <input type="text" id="city" name="city" readonly placeholder="Waiting for GPS...">
+    <div id="mainContent">
+        <div id="syncPanel" class="sync-panel">
+            <div class="sync-header">
+                <div class="sync-info">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span id="syncText">0 unsent records</span>
+                </div>
+                <div class="btn-group">
+                    <button onclick="toggleRecordList()" class="btn-sm btn-view">Show Data</button>
+                    <button onclick="syncDataManual()" class="btn-sm btn-sync">Sync Now</button>
                 </div>
             </div>
+            <div id="recordList"></div>
+        </div>
 
-            <div class="form-group"><label><i class="fas fa-comment"></i> Remarks</label><textarea name="Remarks"></textarea></div>
+        <div class="form-card">
+            <form id="trackingForm">
+                <div class="form-row">
+                    <div class="form-group"><label><i class="fas fa-user"></i> Engineer Name</label><input type="text" name="engineer" required></div>
+                    <div class="form-group"><label><i class="fas fa-id-card"></i> Employee ID</label><input type="text" name="employeeId" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label><i class="fas fa-ticket-alt"></i> Ticket ID</label><input type="text" name="ticketId"></div>
+                    <div class="form-group"><label><i class="fas fa-calendar"></i> Date</label><input type="date" id="date" name="date" required></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label><i class="fas fa-clock"></i> Login Time</label><input type="time" name="loginTime" required></div>
+                    <div class="form-group"><label><i class="fas fa-briefcase"></i> Shift</label><select name="Shift" required><option value="">Select</option><option>Day</option><option>Night</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label><i class="fas fa-tasks"></i> Status</label><select name="Status" required><option value="">Select</option><option>Assigned</option><option>Available</option><option>Travelling</option><option>On Hold</option></select></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label><i class="fas fa-map-pin"></i> Latitude</label><input type="text" id="latitude" name="Latitude" readonly required></div>
+                    <div class="form-group"><label><i class="fas fa-map-pin"></i> Longitude</label><input type="text" id="longitude" name="Longitude" readonly required></div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1 / -1;">
+                        <label><i class="fas fa-city"></i> City (Auto)</label>
+                        <input type="text" id="city" name="city" readonly placeholder="Detecting...">
+                    </div>
+                </div>
 
-            <button type="submit" id="submitBtn" class="submit-btn">
-                <i class="fas fa-save"></i> Submit
-            </button>
-        </form>
-        <div id="message"></div>
+                <div class="form-group"><label><i class="fas fa-comment"></i> Remarks</label><textarea name="Remarks"></textarea></div>
+
+                <button type="submit" id="submitBtn" class="submit-btn">
+                    <i class="fas fa-save"></i> Submit
+                </button>
+            </form>
+            <div id="message"></div>
+        </div>
     </div>
 </div>
 
@@ -102,7 +121,67 @@ const SUPABASE_URL = 'https://eyodotdtktfzumztemmt.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV5b2RvdGR0a3RmenVtenRlbW10Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIzNzUyMTcsImV4cCI6MjA4Nzk1MTIxN30.iMR5tMXFL7dZIv5gz4LXeOfr3wJEQlZn7IO_PpdqMLU';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- HELPER: VIEW RECORDS ---
+// --- GPS GATE LOGIC ---
+function requestGPS() {
+    if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                // SUCCESS
+                document.getElementById('permissionGate').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                
+                const lt = pos.coords.latitude.toFixed(6);
+                const lg = pos.coords.longitude.toFixed(6);
+                document.getElementById('latitude').value = lt;
+                document.getElementById('longitude').value = lg;
+                setCity(lt, lg);
+                syncData(); // Check sync on start
+            },
+            (err) => {
+                // DENIED
+                document.getElementById('gateError').style.display = 'block';
+            },
+            { enableHighAccuracy: true }
+        );
+    } else {
+        alert("GPS not supported on this browser.");
+    }
+}
+
+// --- CITY & SYNC LOGIC ---
+async function setCity(lat, lng) {
+    try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
+        const data = await res.json();
+        const addr = data.address || {};
+        document.getElementById('city').value = addr.city || addr.town || addr.village || "Unknown";
+    } catch (e) { document.getElementById('city').value = "Unknown"; }
+}
+
+async function syncData() {
+    let pending = JSON.parse(localStorage.getItem('innoworq_offline_final') || "[]");
+    const panel = document.getElementById('syncPanel');
+    const text = document.getElementById('syncText');
+
+    if (pending.length === 0) { panel.style.display = "none"; return; }
+    panel.style.display = "block";
+    text.innerText = `${pending.length} record(s) waiting...`;
+
+    for (let i = 0; i < pending.length; i++) {
+        try {
+            const { error } = await _supabase.from('engineer_tracking').insert([pending[i]]);
+            if (!error) {
+                pending.splice(i, 1);
+                localStorage.setItem('innoworq_offline_final', JSON.stringify(pending));
+                i--;
+                renderRecords();
+            }
+        } catch (e) { break; }
+    }
+    text.innerText = pending.length === 0 ? "All synced!" : `${pending.length} records unsent.`;
+    if (pending.length === 0) setTimeout(() => panel.style.display = "none", 3000);
+}
+
 function toggleRecordList() {
     const list = document.getElementById('recordList');
     list.style.display = list.style.display === 'none' ? 'block' : 'none';
@@ -114,109 +193,55 @@ function renderRecords() {
     const list = document.getElementById('recordList');
     list.innerHTML = pending.length ? "" : "No records pending.";
     pending.forEach((r, idx) => {
-        list.innerHTML += `<div class="record-item"><span>#${idx+1}: ${r.city || 'Unknown City'} (${r.status})</span><span style="color:#f59e0b">● Pending</span></div>`;
+        list.innerHTML += `<div class="record-item"><span>#${idx+1}: ${r.city} (${r.status})</span><span style="color:#f59e0b">● Pending</span></div>`;
     });
 }
 
-// --- SYNC ENGINE ---
 async function syncDataManual() {
     const btn = document.querySelector('.btn-sync');
-    btn.disabled = true;
     btn.innerText = "Syncing...";
     await syncData();
-    btn.disabled = false;
     btn.innerText = "Sync Now";
-}
-
-async function syncData() {
-    let pending = JSON.parse(localStorage.getItem('innoworq_offline_final') || "[]");
-    const panel = document.getElementById('syncPanel');
-    const text = document.getElementById('syncText');
-
-    if (pending.length === 0) {
-        panel.style.display = "none";
-        return;
-    }
-
-    panel.style.display = "block";
-    text.innerText = `${pending.length} record(s) waiting to sync...`;
-
-    for (let i = 0; i < pending.length; i++) {
-        try {
-            const { error } = await _supabase.from('engineer_tracking').insert([pending[i]]);
-            if (!error) {
-                pending.splice(i, 1);
-                localStorage.setItem('innoworq_offline_final', JSON.stringify(pending));
-                i--; // Stay at current index for next item
-                renderRecords();
-            }
-        } catch (e) { break; } // Poor internet, exit loop
-    }
-    
-    text.innerText = pending.length === 0 ? "All synced!" : `${pending.length} records unsent.`;
-    if (pending.length === 0) setTimeout(() => panel.style.display = "none", 3000);
-}
-
-// Check every 30 seconds
-setInterval(syncData, 30000);
-
-// --- GPS & CITY ---
-async function setCity(lat, lng) {
-    try {
-        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`);
-        const data = await res.json();
-        const addr = data.address || {};
-        document.getElementById('city').value = addr.city || addr.town || addr.village || addr.county || "Unknown";
-    } catch (e) { document.getElementById('city').value = "Unknown"; }
 }
 
 window.onload = () => {
     document.getElementById('date').value = new Date().toISOString().split('T')[0];
-    
-    navigator.geolocation.getCurrentPosition(pos => {
-        const lt = pos.coords.latitude.toFixed(6);
-        const lg = pos.coords.longitude.toFixed(6);
-        document.getElementById('latitude').value = lt;
-        document.getElementById('longitude').value = lg;
-        setCity(lt, lg);
-    }, null, { enableHighAccuracy: true });
-
-    syncData(); // Check for data on startup
-
-    document.getElementById('trackingForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const fd = new FormData(this);
-        const submissionData = {
-            engineer: fd.get('engineer'),
-            employeeId: fd.get('employeeId'),
-            ticketId: fd.get('ticketId'),
-            date: fd.get('date'),
-            loginTime: fd.get('loginTime'),
-            shift: fd.get('Shift'),
-            status: fd.get('Status'),
-            latitude: parseFloat(fd.get('Latitude')),
-            longitude: parseFloat(fd.get('Longitude')),
-            city: fd.get('city'), // SAVING CITY
-            remarks: fd.get('Remarks')
-        };
-
-        // SAVE TO PHONE MEMORY
-        const pending = JSON.parse(localStorage.getItem('innoworq_offline_final') || "[]");
-        pending.push(submissionData);
-        localStorage.setItem('innoworq_offline_final', JSON.stringify(pending));
-
-        // SHOW SUCCESS
-        const msg = document.getElementById('message');
-        msg.className = "success";
-        msg.style.display = "block";
-        msg.innerHTML = "✅ <b>Saved Locally!</b> Will sync automatically.";
-        
-        this.reset();
-        document.getElementById('date').value = new Date().toISOString().split('T')[0];
-        syncData();
-        setTimeout(() => msg.style.display = "none", 4000);
-    });
 };
+
+// --- SUBMIT LOGIC ---
+document.getElementById('trackingForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fd = new FormData(this);
+    const submissionData = {
+        engineer: fd.get('engineer'),
+        employeeId: fd.get('employeeId'),
+        ticketId: fd.get('ticketId'),
+        date: fd.get('date'),
+        loginTime: fd.get('loginTime'),
+        shift: fd.get('Shift'),
+        status: fd.get('Status'),
+        latitude: parseFloat(fd.get('Latitude')),
+        longitude: parseFloat(fd.get('Longitude')),
+        city: fd.get('city'),
+        remarks: fd.get('Remarks')
+    };
+
+    const pending = JSON.parse(localStorage.getItem('innoworq_offline_final') || "[]");
+    pending.push(submissionData);
+    localStorage.setItem('innoworq_offline_final', JSON.stringify(pending));
+
+    const msg = document.getElementById('message');
+    msg.className = "success"; msg.style.display = "block";
+    msg.innerHTML = "✅ Saved Locally! Syncing in background...";
+    
+    this.reset();
+    document.getElementById('date').value = new Date().toISOString().split('T')[0];
+    requestGPS(); // Refresh GPS for next submission
+    syncData();
+    setTimeout(() => msg.style.display = "none", 4000);
+});
+
+setInterval(syncData, 30000);
 </script>
 </body>
 </html>
