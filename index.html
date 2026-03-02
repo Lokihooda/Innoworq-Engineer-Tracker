@@ -18,10 +18,16 @@
         .form-group input, .form-group select, .form-group textarea { padding:12px; border:2px solid #e0e0e0; border-radius:8px; font-size:14px; }
         textarea { resize:vertical; }
         .submit-btn { width:100%; padding:15px; background:linear-gradient(135deg,#667eea,#764ba2); color:white; border:none; border-radius:8px; font-size:16px; cursor:pointer; font-weight:600; }
-        #message { margin-top:15px; padding:12px; border-radius:8px; display:none; text-align:center; font-weight:600; }
-        .success { background:#d1fae5; color:#065f46; display:block; }
-        .error { background:#fee2e2; color:#991b1b; display:block; }
-        .warning { background:#fef3c7; color:#92400e; display:block; padding:10px; border-radius:8px; margin-bottom:10px; font-size:13px; }
+        
+        #message { margin-top:15px; padding:15px; border-radius:8px; display:none; text-align:left; font-size: 14px; }
+        .success { background:#d1fae5; color:#065f46; border: 1px solid #059669; }
+        .error { background:#fee2e2; color:#991b1b; border: 1px solid #ef4444; }
+        
+        /* Special Instructions Box */
+        .instructions { margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 5px; font-weight: normal; line-height: 1.5; }
+        .instructions b { color: #000; }
+        .instructions ul { margin-left: 20px; margin-top: 5px; }
+
         @media(max-width:600px){ .form-row{ grid-template-columns:1fr; } }
     </style>
 </head>
@@ -32,10 +38,6 @@
     </header>
 
     <div class="form-card">
-        <div id="connectionWarning" style="display:none;" class="warning">
-            ⚠️ <b>Connection Note:</b> If submission fails, please disable Ad-blockers or switch to Mobile Data.
-        </div>
-
         <form id="trackingForm">
             <div class="form-row">
                 <div class="form-group">
@@ -115,6 +117,7 @@
                 <i class="fas fa-paper-plane"></i> Submit Location
             </button>
         </form>
+
         <div id="message"></div>
     </div>
 </div>
@@ -158,7 +161,6 @@ function getLocation(){
 window.onload = () => {
     setCurrentDate();
     getLocation();
-    document.getElementById('connectionWarning').style.display = "block";
 
     const form = document.getElementById('trackingForm');
     const message = document.getElementById('message');
@@ -172,10 +174,10 @@ window.onload = () => {
             return;
         }
 
-        // --- OPTIMISTIC UI: Show success immediately to the user ---
+        // Processing State
         message.className = "success";
-        message.innerHTML = "⏳ Sending... Please wait.";
         message.style.display = "block";
+        message.innerHTML = "⏳ Sending data to server...";
         submitBtn.disabled = true;
         submitBtn.style.opacity = "0.5";
 
@@ -201,8 +203,8 @@ window.onload = () => {
 
             if (error) throw error;
 
-            // Final Success State
-            message.innerHTML = "✅ Data saved successfully!";
+            // Success State
+            message.innerHTML = "✅ <b>Success!</b> Data saved to Google Sheets via Supabase.";
             form.reset();
             setCurrentDate();
             getLocation();
@@ -211,18 +213,29 @@ window.onload = () => {
                 message.style.display = "none"; 
                 submitBtn.disabled = false;
                 submitBtn.style.opacity = "1";
-            }, 4000);
+            }, 5000);
 
         } catch (err) {
             submitBtn.disabled = false;
             submitBtn.style.opacity = "1";
             message.className = "error";
 
-            // CHECK FOR FETCH FAILURE (Ad-blockers / Firewall)
+            // If it's a "Failed to Fetch" error, show specific instructions
             if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
-                message.innerHTML = "❌ Network Blocked: Please disable Ad-blockers or try using Mobile Data instead of Wi-Fi.";
+                message.innerHTML = `
+                    <strong>❌ Connection Blocked</strong><br>
+                    Your browser or network is preventing this form from reaching the database.
+                    <div class="instructions">
+                        <b>How to fix this:</b>
+                        <ul>
+                            <li><b>Switch to Mobile Data:</b> If you are on Office Wi-Fi, it may be blocked.</li>
+                            <li><b>Disable Ad-Blockers:</b> Turn off extensions like AdBlock, uBlock, or Brave Shields.</li>
+                            <li><b>Try a different browser:</b> Use Google Chrome or Safari.</li>
+                        </ul>
+                    </div>
+                `;
             } else {
-                message.innerHTML = "❌ Database Error: " + err.message;
+                message.innerHTML = "❌ <b>Database Error:</b> " + err.message;
             }
             console.error(err);
         }
