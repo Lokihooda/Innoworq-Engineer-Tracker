@@ -23,10 +23,10 @@
         .success { background:#d1fae5; color:#065f46; border: 1px solid #059669; }
         .error { background:#fee2e2; color:#991b1b; border: 1px solid #ef4444; }
         
-        /* Special Instructions Box */
-        .instructions { margin-top: 10px; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 5px; font-weight: normal; line-height: 1.5; }
+        .instructions { margin-top: 10px; padding: 12px; background: rgba(255,255,255,0.7); border-radius: 6px; font-weight: normal; line-height: 1.6; border-left: 4px solid #ef4444; }
         .instructions b { color: #000; }
         .instructions ul { margin-left: 20px; margin-top: 5px; }
+        .retry-status { display: inline-block; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 10px; font-weight: bold; }
 
         @media(max-width:600px){ .form-row{ grid-template-columns:1fr; } }
     </style>
@@ -158,6 +158,27 @@ function getLocation(){
     }
 }
 
+// Helper function to handle Retries and Timeouts for Low Internet
+async function insertWithRetry(data, maxRetries = 3) {
+    for (let i = 0; i < maxRetries; i++) {
+        try {
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Timeout')), 15000)
+            );
+            const insertPromise = _supabase.from('engineer_tracking').insert([data]);
+            
+            const result = await Promise.race([insertPromise, timeoutPromise]);
+            if (result.error) throw result.error;
+            return result;
+        } catch (err) {
+            console.warn(`Retry attempt ${i + 1} failed`);
+            if (i === maxRetries - 1) throw err;
+            await new Promise(r => setTimeout(r, 2000)); // Wait 2s before retry
+            document.getElementById('message').innerHTML = `⏳ Signal weak, retrying... (${i + 1}/${maxRetries})`;
+        }
+    }
+}
+
 window.onload = () => {
     setCurrentDate();
     getLocation();
@@ -170,14 +191,13 @@ window.onload = () => {
         e.preventDefault();
         
         if(!document.getElementById('latitude').value) {
-            alert("Still waiting for GPS lock. Please wait.");
+            alert("Still waiting for GPS. Please move to an open area for better signal.");
             return;
         }
 
-        // Processing State
         message.className = "success";
         message.style.display = "block";
-        message.innerHTML = "⏳ Sending data to server...";
+        message.innerHTML = "⏳ Connecting to server...";
         submitBtn.disabled = true;
         submitBtn.style.opacity = "0.5";
 
@@ -197,14 +217,9 @@ window.onload = () => {
         };
 
         try {
-            const { error } = await _supabase
-                .from('engineer_tracking')
-                .insert([submissionData]);
+            await insertWithRetry(submissionData);
 
-            if (error) throw error;
-
-            // Success State
-            message.innerHTML = "✅ <b>Success!</b> Data saved to Google Sheets via Supabase.";
+            message.innerHTML = "✅ <b>Success!</b> Your location has been recorded.";
             form.reset();
             setCurrentDate();
             getLocation();
@@ -213,24 +228,24 @@ window.onload = () => {
                 message.style.display = "none"; 
                 submitBtn.disabled = false;
                 submitBtn.style.opacity = "1";
-            }, 5000);
+            }, 6000);
 
         } catch (err) {
             submitBtn.disabled = false;
             submitBtn.style.opacity = "1";
             message.className = "error";
 
-            // If it's a "Failed to Fetch" error, show specific instructions
-            if (err.message === 'Failed to fetch' || err.name === 'TypeError') {
+            if (err.message === 'Failed to fetch' || err.name === 'TypeError' || err.message === 'Timeout') {
                 message.innerHTML = `
-                    <strong>❌ Connection Blocked</strong><br>
-                    Your browser or network is preventing this form from reaching the database.
+                    <strong>❌ Connection Failed (Internet/Blocker)</strong><br>
+                    Data could not reach the server.
                     <div class="instructions">
-                        <b>How to fix this:</b>
+                        <b>Please try these steps:</b>
                         <ul>
-                            <li><b>Switch to Mobile Data:</b> If you are on Office Wi-Fi, it may be blocked.</li>
-                            <li><b>Disable Ad-Blockers:</b> Turn off extensions like AdBlock, uBlock, or Brave Shields.</li>
-                            <li><b>Try a different browser:</b> Use Google Chrome or Safari.</li>
+                            <li><b>Slow Internet:</b> Move to a spot with better mobile signal (4G/5G).</li>
+                            <li><b>Switch Network:</b> If you are on Office Wi-Fi, turn it OFF and use Mobile Data.</li>
+                            <li><b>Disable Blockers:</b> Turn off Ad-blockers or Brave Shields.</li>
+                            <li><b>Refresh:</b> If it still fails, refresh the page and try once more.</li>
                         </ul>
                     </div>
                 `;
