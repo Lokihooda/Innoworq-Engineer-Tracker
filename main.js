@@ -1,38 +1,49 @@
-// 1. Set default date to today on page load
+// 1. Initialize Date and Auto-Load
 window.addEventListener('DOMContentLoaded', () => {
     const filterDateInput = document.getElementById('filterDate');
+    
     if (filterDateInput) {
         const today = new Date().toISOString().split('T')[0];
         filterDateInput.value = today;
+        console.log("Date set to:", today);
     }
-    // Optional: Auto-load data on startup
+
+    // Attach event listener to the date input so it updates when changed
+    filterDateInput.addEventListener('change', loadMapData);
+
+    // Initial load
     loadMapData();
 });
 
 async function loadMapData() {
     const selectedDate = document.getElementById('filterDate').value;
+    console.log("Fetching data for:", selectedDate);
     
-    // 2. Fetch data filtered by the selected date
+    // 2. Fetch data
     const { data, error } = await _supabase
         .from('engineer_tracking')
         .select('*')
         .eq('date', selectedDate);
 
     if (error) {
-        console.error("Error fetching map data:", error);
+        console.error("Supabase Error:", error);
         return;
     }
 
-    // 3. Clear existing markers from the map
-    markers.forEach(m => map.removeLayer(m));
+    console.log("Data received:", data);
+
+    // 3. Clear existing markers safely
+    if (markers && markers.length > 0) {
+        markers.forEach(m => map.removeLayer(m));
+    }
     markers = [];
     
-    // Create a feature group to manage markers and handle auto-zooming
     let group = new L.featureGroup(); 
 
+    // 4. Loop and Create Markers
     data.forEach(rec => {
         if(rec.latitude && rec.longitude) {
-            // 4. Color Logic (Green: Available, Orange: Travelling, Red: Others)
+            // Color Logic
             let color = rec.status === 'Available' ? "#22c55e" : 
                         (rec.status === 'Travelling' ? "#f59e0b" : "#ef4444");
 
@@ -47,15 +58,14 @@ async function loadMapData() {
                 iconSize: [14, 14] 
             });
 
-            // 5. Create Marker with merged Popup details
             const m = L.marker([rec.latitude, rec.longitude], { icon: customIcon })
                 .bindPopup(`
-                    <div style="font-family: sans-serif; line-height: 1.5;">
-                        <strong style="color:#667eea; font-size: 1.1em;">${rec.engineer}</strong><br>
+                    <div style="font-family: sans-serif;">
+                        <strong style="color:#667eea;">${rec.engineer}</strong><br>
                         <b>ID:</b> ${rec.employeeId || 'N/A'}<br>
                         <b>Time:</b> ${rec.loginTime || 'N/A'}<br>
-                        <b>Status:</b> <span style="color:${color}; font-weight:bold;">${rec.status}</span><br>
-                        <b>City:</b> ${rec.city}<br>
+                        <b>Status:</b> ${rec.status}<br>
+                        <b>City:</b> ${rec.city}
                     </div>
                 `);
             
@@ -64,15 +74,14 @@ async function loadMapData() {
         }
     });
 
+    // 5. Add to map and adjust view
     group.addTo(map);
 
-    // 6. Viewport adjustment
     if (markers.length > 0) {
-        // Auto-zoom to fit all markers with a bit of padding
         map.fitBounds(group.getBounds().pad(0.2)); 
+        console.log(`${markers.length} markers added to map.`);
     } else {
-        // Reset to default view (India) if no results found
         map.setView([20.5937, 78.9629], 5);
-        console.log("No tracking data found for " + selectedDate);
+        console.warn("No coordinates found for this date.");
     }
 }
