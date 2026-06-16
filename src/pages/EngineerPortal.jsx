@@ -38,6 +38,54 @@ export default function EngineerPortal() {
     }
   }, []);
 
+  // Background Location Tracking
+  useEffect(() => {
+    let watchId;
+    let lastUpdateTime = 0;
+
+    const startTracking = () => {
+      if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(
+          async (pos) => {
+            const trackingTicketId = localStorage.getItem('tracking_ticket_id');
+            if (!trackingTicketId) return;
+
+            const now = Date.now();
+            // Throttle updates to every 30 seconds
+            if (now - lastUpdateTime < 30000) return;
+            lastUpdateTime = now;
+
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            
+            try {
+              await supabase.from('ticket_tracking')
+                .update({
+                  latest_lat: lat,
+                  latest_lng: lng,
+                })
+                .eq('id', trackingTicketId);
+            } catch (err) {
+              console.error("Failed to update background location", err);
+            }
+          },
+          (err) => {
+            console.error('Background tracking error:', err);
+          },
+          { enableHighAccuracy: true, maximumAge: 10000 }
+        );
+      }
+    };
+
+    startTracking();
+
+    return () => {
+      if (watchId && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
+  }, []);
+
   const requestGPS = () => {
     setGpsLoading(true);
     if (navigator.geolocation) {
@@ -143,7 +191,7 @@ export default function EngineerPortal() {
       // Create new ticket row
       const newHistory = { [formData.status]: statusUpdatePayload };
       
-      const { error } = await supabase.from('ticket_tracking').insert([{
+      const { data, error } = await supabase.from('ticket_tracking').insert([{
         ticket_id: formData.ticketId,
         date: today,
         employee_id: formData.employeeId,
@@ -155,13 +203,13 @@ export default function EngineerPortal() {
         latest_lng: location.lng,
         status_history: newHistory,
         remarks: formData.remarks
-      }]);
+      }]).select();
 
       if (error) {
         console.error(error);
         setMessage({ type: 'error', text: `Failed to create ticket: ${error.message}` });
       } else {
-        handleSuccess('Ticket started successfully!');
+        handleSuccess('Ticket started successfully!', formData.status, data[0].id);
       }
     } else {
       // Update existing ticket row
@@ -185,15 +233,22 @@ export default function EngineerPortal() {
         console.error(error);
         setMessage({ type: 'error', text: `Failed to update ticket: ${error.message}` });
       } else {
-        handleSuccess('Ticket status updated successfully!');
+        handleSuccess('Ticket status updated successfully!', formData.status, activeTicket.id);
       }
     }
     setSubmitting(false);
   };
 
-  const handleSuccess = (msg) => {
+  const handleSuccess = (msg, status, ticketDbId) => {
     localStorage.setItem('eng_name', formData.name);
     localStorage.setItem('eng_empId', formData.employeeId);
+    
+    if (status === 'Start Journey' || status === 'Travelling') {
+      localStorage.setItem('tracking_ticket_id', ticketDbId);
+    } else if (status === 'Reached the Site' || status === 'Activity Completed' || status === 'Leaving the Site') {
+      localStorage.removeItem('tracking_ticket_id');
+    }
+
     setMessage({ type: 'success', text: msg });
     setActiveTicket(null);
     setFormData(prev => ({ ...prev, ticketId: '', status: '', remarks: '' }));
@@ -303,8 +358,6 @@ export default function EngineerPortal() {
                       <option value="Reached the Site">🟢 Reached the Site</option>
                       <option value="Activity Completed">🟢 Activity Completed</option>
                       <option value="Leaving the Site">🔵 Leaving the Site</option>
-                      <option value="Activity Attempted">🔴 Activity Attempted</option>
-                      <option value="Activity Cancelled">🔴 Activity Cancelled</option>
                     </select>
                   </div>
                   
