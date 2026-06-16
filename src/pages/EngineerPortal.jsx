@@ -245,7 +245,7 @@ export default function EngineerPortal() {
     
     if (status === 'Start Journey' || status === 'Travelling') {
       localStorage.setItem('tracking_ticket_id', ticketDbId);
-    } else if (status === 'Reached the Site' || status === 'Activity Completed' || status === 'Leaving the Site') {
+    } else if (['Reached the Site', 'Activity Completed', 'Leaving the Site', 'Attempted', 'Cancelled'].includes(status)) {
       localStorage.removeItem('tracking_ticket_id');
     }
 
@@ -358,6 +358,8 @@ export default function EngineerPortal() {
                       <option value="Reached the Site">🟢 Reached the Site</option>
                       <option value="Activity Completed">🟢 Activity Completed</option>
                       <option value="Leaving the Site">🔵 Leaving the Site</option>
+                      <option value="Attempted">🟠 Attempted</option>
+                      <option value="Cancelled">🔴 Cancelled</option>
                     </select>
                   </div>
                   
