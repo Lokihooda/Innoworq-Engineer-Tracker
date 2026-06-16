@@ -111,6 +111,12 @@ export default function AdminDashboard() {
         'Leaving Site (Time)': hist['Leaving the Site']?.time || '',
         'Leaving Site (Lat/Lng)': hist['Leaving the Site'] ? `${hist['Leaving the Site'].lat}, ${hist['Leaving the Site'].lng}` : '',
         
+        'Attempted (Time)': hist['Attempted']?.time || '',
+        'Attempted (Lat/Lng)': hist['Attempted'] ? `${hist['Attempted'].lat}, ${hist['Attempted'].lng}` : '',
+        
+        'Cancelled (Time)': hist['Cancelled']?.time || '',
+        'Cancelled (Lat/Lng)': hist['Cancelled'] ? `${hist['Cancelled'].lat}, ${hist['Cancelled'].lng}` : '',
+        
         'Latest City': ticket.latest_city || '',
         'Remarks': ticket.remarks || ''
       };
@@ -311,7 +317,8 @@ export default function AdminDashboard() {
                         <div className="font-semibold text-gray-800 text-sm group-hover:text-primary transition-colors">{ticket.ticket_id}</div>
                         <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide
                           ${['Activity Completed', 'Leaving the Site'].includes(ticket.current_status) ? 'bg-emerald-100 text-emerald-700' : 
-                            ['Start Journey', 'Travelling'].includes(ticket.current_status) ? 'bg-amber-100 text-amber-700' : 
+                            ['Start Journey', 'Travelling', 'Attempted'].includes(ticket.current_status) ? 'bg-amber-100 text-amber-700' : 
+                            ticket.current_status === 'Cancelled' ? 'bg-red-100 text-red-700' : 
                             ticket.current_status === 'Reached the Site' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}`}>
                           {ticket.current_status}
                         </span>
