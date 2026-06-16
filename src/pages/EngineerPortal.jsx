@@ -303,6 +303,8 @@ export default function EngineerPortal() {
                       <option value="Reached the Site">🟢 Reached the Site</option>
                       <option value="Activity Completed">🟢 Activity Completed</option>
                       <option value="Leaving the Site">🔵 Leaving the Site</option>
+                      <option value="Activity Attempted">🔴 Activity Attempted</option>
+                      <option value="Activity Cancelled">🔴 Activity Cancelled</option>
                     </select>
                   </div>
                   
