@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import MapComponent from '../components/MapComponent';
 import * as XLSX from 'xlsx';
-import { Users, Truck, CheckCircle2, MapPin, Search, RefreshCw, Calendar, ArrowLeft, Download, Briefcase } from 'lucide-react';
+import { Users, Truck, CheckCircle2, MapPin, Search, RefreshCw, Calendar, ArrowLeft, Download, Briefcase, MessageSquare } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
@@ -329,6 +329,12 @@ export default function AdminDashboard() {
                       <div className="text-xs text-gray-400 mt-1 truncate flex items-center gap-1">
                         <MapPin size={10} /> {ticket.latest_city || 'Unknown Location'}
                       </div>
+                      {ticket.remarks && (
+                        <div className="text-xs text-gray-500 mt-2 bg-gray-50 border border-gray-100 p-2 rounded-lg flex items-start gap-1.5">
+                          <MessageSquare size={12} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                          <span className="italic line-clamp-2">{ticket.remarks}</span>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
