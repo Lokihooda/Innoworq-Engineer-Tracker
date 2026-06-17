@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
-import { MapPin, User, Hash, Ticket, Briefcase, MessageSquare, Send, ShieldCheck, ChevronRight, Search } from 'lucide-react';
+import { MapPin, User, Hash, Ticket, Briefcase, MessageSquare, Send, ShieldCheck, ChevronRight, Search, Download, Calendar } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 export default function EngineerPortal() {
   const navigate = useNavigate();
@@ -14,6 +15,8 @@ export default function EngineerPortal() {
   const [message, setMessage] = useState(null);
 
   const [activeTicket, setActiveTicket] = useState(null); // The loaded ticket from DB
+  const [downloadMonth, setDownloadMonth] = useState(new Date().toISOString().substring(0, 7));
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -255,6 +258,82 @@ export default function EngineerPortal() {
     setTimeout(() => setMessage(null), 4000);
   };
 
+  const downloadMyData = async () => {
+    if (!formData.employeeId) {
+      setMessage({ type: 'error', text: 'Please enter an Employee ID to download data.' });
+      return;
+    }
+    
+    setIsDownloading(true);
+    const [year, month] = downloadMonth.split('-');
+    const lastDay = new Date(year, month, 0).getDate();
+    
+    const { data: monthData, error } = await supabase
+      .from('ticket_tracking')
+      .select('*')
+      .ilike('employee_id', formData.employeeId)
+      .gte('date', `${downloadMonth}-01`)
+      .lte('date', `${downloadMonth}-${lastDay}`);
+
+    if (error) {
+      console.error('Error fetching monthly data:', error);
+      setMessage({ type: 'error', text: 'Failed to fetch data for report.' });
+      setIsDownloading(false);
+      return;
+    }
+
+    if (!monthData || monthData.length === 0) {
+      setMessage({ type: 'error', text: 'No data found for this month.' });
+      setIsDownloading(false);
+      return;
+    }
+
+    const rawData = monthData.map(ticket => {
+      const hist = ticket.status_history || {};
+      return {
+        'Date': ticket.date,
+        'Ticket ID': ticket.ticket_id,
+        'Current Status': ticket.current_status,
+        
+        'Assigned (Time)': hist['Assigned']?.time || '',
+        'Assigned (Lat/Lng)': hist['Assigned'] ? `${hist['Assigned'].lat}, ${hist['Assigned'].lng}` : '',
+        
+        'Start Journey (Time)': hist['Start Journey']?.time || '',
+        'Start Journey (Lat/Lng)': hist['Start Journey'] ? `${hist['Start Journey'].lat}, ${hist['Start Journey'].lng}` : '',
+        
+        'Travelling (Time)': hist['Travelling']?.time || '',
+        'Travelling (Lat/Lng)': hist['Travelling'] ? `${hist['Travelling'].lat}, ${hist['Travelling'].lng}` : '',
+        
+        'Reached Site (Time)': hist['Reached the Site']?.time || '',
+        'Reached Site (Lat/Lng)': hist['Reached the Site'] ? `${hist['Reached the Site'].lat}, ${hist['Reached the Site'].lng}` : '',
+        
+        'Activity Completed (Time)': hist['Activity Completed']?.time || '',
+        'Activity Completed (Lat/Lng)': hist['Activity Completed'] ? `${hist['Activity Completed'].lat}, ${hist['Activity Completed'].lng}` : '',
+        
+        'Leaving Site (Time)': hist['Leaving the Site']?.time || '',
+        'Leaving Site (Lat/Lng)': hist['Leaving the Site'] ? `${hist['Leaving the Site'].lat}, ${hist['Leaving the Site'].lng}` : '',
+        
+        'Attempted (Time)': hist['Attempted']?.time || '',
+        'Attempted (Lat/Lng)': hist['Attempted'] ? `${hist['Attempted'].lat}, ${hist['Attempted'].lng}` : '',
+        
+        'Cancelled (Time)': hist['Cancelled']?.time || '',
+        'Cancelled (Lat/Lng)': hist['Cancelled'] ? `${hist['Cancelled'].lat}, ${hist['Cancelled'].lng}` : '',
+        
+        'Latest City': ticket.latest_city || '',
+        'Remarks': ticket.remarks || ''
+      };
+    });
+
+    const wb = XLSX.utils.book_new();
+    const wsRaw = XLSX.utils.json_to_sheet(rawData);
+    XLSX.utils.book_append_sheet(wb, wsRaw, "My Tickets");
+
+    XLSX.writeFile(wb, `My_Productivity_${formData.employeeId}_${downloadMonth}.xlsx`);
+    setIsDownloading(false);
+    setMessage({ type: 'success', text: 'Data downloaded successfully!' });
+    setTimeout(() => setMessage(null), 4000);
+  };
+
   return (
     <div className="container p-4 mx-auto max-w-md min-h-screen flex flex-col justify-center py-10">
       
@@ -379,6 +458,48 @@ export default function EngineerPortal() {
               )}
             </div>
           )}
+
+          {/* Download Data Section */}
+          <div className="mt-8 pt-6 border-t border-gray-100">
+            <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+              <Download size={16} className="text-primary" /> Download Monthly Report
+            </h3>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 font-semibold uppercase mb-1 block">Employee ID</label>
+                  <input 
+                    type="text" 
+                    name="employeeId" 
+                    value={formData.employeeId} 
+                    onChange={handleInputChange} 
+                    placeholder="EMP123" 
+                    className="input-field w-full py-2 text-sm" 
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 font-semibold uppercase mb-1 block">Month</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                    <input 
+                      type="month" 
+                      value={downloadMonth}
+                      onChange={(e) => setDownloadMonth(e.target.value)}
+                      className="input-field w-full py-2 pl-8 text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                onClick={downloadMyData} 
+                disabled={isDownloading || !formData.employeeId || !downloadMonth} 
+                className="btn-primary w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md"
+              >
+                {isDownloading ? <div className="spinner w-4 h-4 border-2"></div> : <><Download size={16} /> Download Excel</>}
+              </button>
+            </div>
+          </div>
 
           {message && (
             <div className={`mt-6 p-4 rounded-xl text-center text-sm font-medium animate-slide-up ${message.type === 'error' ? 'bg-red-50 text-red-600 border border-red-200' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}`}>
