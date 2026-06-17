@@ -15,7 +15,8 @@ export default function EngineerPortal() {
   const [message, setMessage] = useState(null);
 
   const [activeTicket, setActiveTicket] = useState(null); // The loaded ticket from DB
-  const [downloadMonth, setDownloadMonth] = useState(new Date().toISOString().substring(0, 7));
+  const [fromDate, setFromDate] = useState(new Date().toISOString().split('T')[0]);
+  const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDownloading, setIsDownloading] = useState(false);
 
   // Form State
@@ -265,30 +266,28 @@ export default function EngineerPortal() {
     }
     
     setIsDownloading(true);
-    const [year, month] = downloadMonth.split('-');
-    const lastDay = new Date(year, month, 0).getDate();
     
-    const { data: monthData, error } = await supabase
+    const { data: reportData, error } = await supabase
       .from('ticket_tracking')
       .select('*')
       .ilike('employee_id', formData.employeeId)
-      .gte('date', `${downloadMonth}-01`)
-      .lte('date', `${downloadMonth}-${lastDay}`);
+      .gte('date', fromDate)
+      .lte('date', toDate);
 
     if (error) {
-      console.error('Error fetching monthly data:', error);
+      console.error('Error fetching data:', error);
       setMessage({ type: 'error', text: 'Failed to fetch data for report.' });
       setIsDownloading(false);
       return;
     }
 
-    if (!monthData || monthData.length === 0) {
-      setMessage({ type: 'error', text: 'No data found for this month.' });
+    if (!reportData || reportData.length === 0) {
+      setMessage({ type: 'error', text: 'No data found for this period.' });
       setIsDownloading(false);
       return;
     }
 
-    const rawData = monthData.map(ticket => {
+    const rawData = reportData.map(ticket => {
       const hist = ticket.status_history || {};
       return {
         'Date': ticket.date,
@@ -328,7 +327,7 @@ export default function EngineerPortal() {
     const wsRaw = XLSX.utils.json_to_sheet(rawData);
     XLSX.utils.book_append_sheet(wb, wsRaw, "My Tickets");
 
-    XLSX.writeFile(wb, `My_Productivity_${formData.employeeId}_${downloadMonth}.xlsx`);
+    XLSX.writeFile(wb, `My_Productivity_${formData.employeeId}_${fromDate}_to_${toDate}.xlsx`);
     setIsDownloading(false);
     setMessage({ type: 'success', text: 'Data downloaded successfully!' });
     setTimeout(() => setMessage(null), 4000);
@@ -462,7 +461,7 @@ export default function EngineerPortal() {
           {/* Download Data Section */}
           <div className="mt-8 pt-6 border-t border-gray-100">
             <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Download size={16} className="text-primary" /> Download Monthly Report
+              <Download size={16} className="text-primary" /> Download Report
             </h3>
             <div className="flex flex-col gap-3">
               <div className="flex gap-2">
@@ -477,14 +476,28 @@ export default function EngineerPortal() {
                     className="input-field w-full py-2 text-sm" 
                   />
                 </div>
+              </div>
+              <div className="flex gap-2">
                 <div className="flex-1">
-                  <label className="text-xs text-gray-500 font-semibold uppercase mb-1 block">Month</label>
+                  <label className="text-xs text-gray-500 font-semibold uppercase mb-1 block">From Date</label>
                   <div className="relative">
                     <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
                     <input 
-                      type="month" 
-                      value={downloadMonth}
-                      onChange={(e) => setDownloadMonth(e.target.value)}
+                      type="date" 
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                      className="input-field w-full py-2 pl-8 text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-gray-500 font-semibold uppercase mb-1 block">To Date</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
+                    <input 
+                      type="date" 
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
                       className="input-field w-full py-2 pl-8 text-sm"
                     />
                   </div>
@@ -493,7 +506,7 @@ export default function EngineerPortal() {
               <button 
                 type="button" 
                 onClick={downloadMyData} 
-                disabled={isDownloading || !formData.employeeId || !downloadMonth} 
+                disabled={isDownloading || !formData.employeeId || !fromDate || !toDate} 
                 className="btn-primary w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md"
               >
                 {isDownloading ? <div className="spinner w-4 h-4 border-2"></div> : <><Download size={16} /> Download Excel</>}
