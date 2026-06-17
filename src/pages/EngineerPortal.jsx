@@ -18,7 +18,8 @@ export default function EngineerPortal() {
   const [fromDate, setFromDate] = useState(new Date().toISOString().split('T')[0]);
   const [toDate, setToDate] = useState(new Date().toISOString().split('T')[0]);
   const [isDownloading, setIsDownloading] = useState(false);
-
+  const [fetchedData, setFetchedData] = useState(null);
+  const [isFetchingData, setIsFetchingData] = useState(false);
   // Form State
   const [formData, setFormData] = useState({
     name: '',
@@ -259,35 +260,47 @@ export default function EngineerPortal() {
     setTimeout(() => setMessage(null), 4000);
   };
 
-  const downloadMyData = async () => {
+  const fetchMyData = async () => {
     if (!formData.employeeId) {
-      setMessage({ type: 'error', text: 'Please enter an Employee ID to download data.' });
+      setMessage({ type: 'error', text: 'Please enter an Employee ID to view data.' });
       return;
     }
     
-    setIsDownloading(true);
+    setIsFetchingData(true);
+    setFetchedData(null);
     
     const { data: reportData, error } = await supabase
       .from('ticket_tracking')
       .select('*')
       .ilike('employee_id', formData.employeeId)
       .gte('date', fromDate)
-      .lte('date', toDate);
+      .lte('date', toDate)
+      .order('date', { ascending: false });
 
     if (error) {
       console.error('Error fetching data:', error);
       setMessage({ type: 'error', text: 'Failed to fetch data for report.' });
-      setIsDownloading(false);
+      setIsFetchingData(false);
       return;
     }
 
     if (!reportData || reportData.length === 0) {
       setMessage({ type: 'error', text: 'No data found for this period.' });
-      setIsDownloading(false);
+      setIsFetchingData(false);
       return;
     }
 
-    const rawData = reportData.map(ticket => {
+    setFetchedData(reportData);
+    setIsFetchingData(false);
+    setMessage({ type: 'success', text: `Found ${reportData.length} records.` });
+    setTimeout(() => setMessage(null), 3000);
+  };
+
+  const downloadExcel = () => {
+    if (!fetchedData || fetchedData.length === 0) return;
+    setIsDownloading(true);
+
+    const rawData = fetchedData.map(ticket => {
       const hist = ticket.status_history || {};
       return {
         'Date': ticket.date,
@@ -461,7 +474,7 @@ export default function EngineerPortal() {
           {/* Download Data Section */}
           <div className="mt-8 pt-6 border-t border-gray-100">
             <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-              <Download size={16} className="text-primary" /> Download Report
+              <Search size={16} className="text-primary" /> View & Download Report
             </h3>
             <div className="flex flex-col gap-3">
               <div className="flex gap-2">
@@ -505,13 +518,45 @@ export default function EngineerPortal() {
               </div>
               <button 
                 type="button" 
-                onClick={downloadMyData} 
-                disabled={isDownloading || !formData.employeeId || !fromDate || !toDate} 
+                onClick={fetchMyData} 
+                disabled={isFetchingData || !formData.employeeId || !fromDate || !toDate} 
                 className="btn-primary w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md"
               >
-                {isDownloading ? <div className="spinner w-4 h-4 border-2"></div> : <><Download size={16} /> Download Excel</>}
+                {isFetchingData ? <div className="spinner w-4 h-4 border-2"></div> : <><Search size={16} /> Fetch Data</>}
               </button>
             </div>
+
+            {fetchedData && fetchedData.length > 0 && (
+              <div className="mt-6 animate-slide-up">
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="text-sm font-semibold text-gray-700">Records Found: {fetchedData.length}</h4>
+                  <button 
+                    type="button" 
+                    onClick={downloadExcel} 
+                    disabled={isDownloading} 
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm transition-colors"
+                  >
+                    {isDownloading ? <div className="spinner w-3 h-3 border-2"></div> : <><Download size={14} /> Download Excel</>}
+                  </button>
+                </div>
+                <div className="max-h-60 overflow-y-auto border border-gray-100 rounded-xl bg-gray-50/50 shadow-inner p-2 space-y-2 custom-scrollbar">
+                  {fetchedData.map((ticket, idx) => (
+                    <div key={idx} className="bg-white p-3 rounded-lg border border-gray-100 shadow-sm flex flex-col gap-1">
+                      <div className="flex justify-between">
+                        <span className="font-bold text-gray-800 text-sm">{ticket.ticket_id}</span>
+                        <span className="text-xs font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md">
+                          {ticket.current_status}
+                        </span>
+                      </div>
+                      <div className="text-xs text-gray-500 flex justify-between">
+                        <span>{ticket.date}</span>
+                        <span>{ticket.latest_city || "Unknown Location"}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {message && (
