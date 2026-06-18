@@ -17,7 +17,7 @@ function MapBounds({ markers }) {
   useEffect(() => {
     if (markers.length > 0) {
       const group = new L.featureGroup(markers.map(m => L.marker([m.latitude, m.longitude])));
-      map.fitBounds(group.getBounds().pad(0.1));
+      map.fitBounds(group.getBounds().pad(0.2));
     }
   }, [markers, map]);
   
@@ -69,23 +69,23 @@ export default function MapComponent({ data, isDiamondMode }) {
             position={[rec.latitude, rec.longitude]}
             icon={createCustomIcon(rec.status)}
           >
-            <Popup className="custom-popup">
-              <div className="p-1">
-                <h3 className="font-bold text-gray-800 text-base">{rec.engineer}</h3>
-                <div className="text-xs text-gray-500 mb-2">ID: {rec.employeeId || 'N/A'}</div>
+            <Popup minWidth={220} className="custom-popup rounded-xl shadow-lg">
+              <div className="p-1 min-w-[200px]">
+                <h3 className="font-bold text-gray-800 text-base border-b border-gray-100 pb-1 mb-2">{rec.engineer}</h3>
+                <div className="text-xs text-gray-500 mb-3 bg-gray-50 px-2 py-1 rounded inline-block">ID: {rec.employeeId || 'N/A'}</div>
                 
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mt-3">
-                  <div className="text-gray-500">Status</div>
-                  <div className="font-semibold" style={{ color: getStatusColor(rec.status) }}>{rec.status}</div>
+                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
+                  <div className="text-gray-500 font-medium">Status:</div>
+                  <div className="font-bold" style={{ color: getStatusColor(rec.status) }}>{rec.status}</div>
                   
-                  <div className="text-gray-500">Time</div>
-                  <div className="font-medium text-gray-700">{rec.loginTime}</div>
+                  <div className="text-gray-500 font-medium">Time:</div>
+                  <div className="font-medium text-gray-700">{rec.time || rec.loginTime || 'N/A'}</div>
                   
-                  <div className="text-gray-500">Ticket</div>
-                  <div className="font-medium text-gray-700">{rec.ticketId || '-'}</div>
+                  <div className="text-gray-500 font-medium">Ticket:</div>
+                  <div className="font-medium text-gray-700 truncate max-w-[120px]" title={rec.ticketId}>{rec.ticketId || '-'}</div>
                   
-                  <div className="text-gray-500">Location</div>
-                  <div className="font-medium text-gray-700">{rec.city}</div>
+                  <div className="text-gray-500 font-medium">Location:</div>
+                  <div className="font-medium text-gray-700">{rec.city || 'N/A'}</div>
                 </div>
               </div>
             </Popup>
