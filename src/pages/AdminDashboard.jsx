@@ -234,7 +234,10 @@ export default function AdminDashboard() {
     employeeId: ticket.employee_id,
     status: ticket.current_status,
     ticketId: ticket.ticket_id,
-    city: ticket.latest_city
+    city: ticket.latest_city,
+    time: ticket.status_history && ticket.status_history[ticket.current_status] 
+          ? ticket.status_history[ticket.current_status].time 
+          : ''
   }));
 
   const allEngineersMapData = allEngineersData.map(ticket => ({
@@ -245,7 +248,10 @@ export default function AdminDashboard() {
     employeeId: ticket.employee_id,
     status: ticket.current_status,
     ticketId: ticket.ticket_id,
-    city: ticket.latest_city
+    city: ticket.latest_city,
+    time: ticket.status_history && ticket.status_history[ticket.current_status] 
+          ? ticket.status_history[ticket.current_status].time 
+          : ''
   }));
 
   const handleLogin = (e) => {
