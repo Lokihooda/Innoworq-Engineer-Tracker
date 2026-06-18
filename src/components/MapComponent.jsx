@@ -24,7 +24,7 @@ function MapBounds({ markers }) {
   return null;
 }
 
-export default function MapComponent({ data }) {
+export default function MapComponent({ data, isDiamondMode }) {
   const validData = data.filter(d => d.latitude && d.longitude);
 
   const getStatusColor = (status) => {
@@ -38,6 +38,11 @@ export default function MapComponent({ data }) {
   };
 
   const createCustomIcon = (status) => {
+    if (isDiamondMode) {
+      const markerHtml = `<div style="font-size: 20px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3)); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">💎</div>`;
+      return L.divIcon({ html: markerHtml, className: 'custom-marker-diamond bg-transparent border-none', iconSize: [24, 24], iconAnchor: [12, 12] });
+    }
+
     const color = getStatusColor(status);
     const markerHtml = `
       <div style="
