@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import MapComponent from '../components/MapComponent';
 import * as XLSX from 'xlsx';
-import { Users, Truck, CheckCircle2, MapPin, Search, RefreshCw, Calendar, ArrowLeft, Download, Briefcase, MessageSquare, X, Clock, Activity, LogOut } from 'lucide-react';
+import { Users, Truck, CheckCircle2, MapPin, Search, RefreshCw, Calendar, ArrowLeft, Download, Briefcase, MessageSquare, X, Clock, Activity, LogOut, ChevronRight, Share2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
@@ -136,24 +136,45 @@ export default function AdminDashboard() {
           name: ticket.engineer_name,
           employeeId: ticket.employee_id,
           daysActive: new Set(),
-          totalTickets: 0,
-          completedTickets: 0
+          uniqueIds: new Set(),
+          statusCounts: {
+            'Assigned': 0,
+            'Start Journey': 0,
+            'Travelling': 0,
+            'Reached the Site': 0,
+            'Activity Completed': 0,
+            'Leaving the Site': 0,
+            'Attempted': 0,
+            'Cancelled': 0,
+          },
+          totalTickets: 0
         };
       }
       
       engineerStats[ticket.employee_id].daysActive.add(ticket.date);
+      if (ticket.ticket_id) {
+        engineerStats[ticket.employee_id].uniqueIds.add(ticket.ticket_id);
+      }
       engineerStats[ticket.employee_id].totalTickets++;
-      if (ticket.current_status === 'Activity Completed' || ticket.current_status === 'Leaving the Site') {
-        engineerStats[ticket.employee_id].completedTickets++;
+      
+      const status = ticket.current_status;
+      if (engineerStats[ticket.employee_id].statusCounts[status] !== undefined) {
+        engineerStats[ticket.employee_id].statusCounts[status]++;
       }
     });
 
     const summaryData = Object.values(engineerStats).map(stat => ({
-      'Employee ID': stat.employeeId,
-      'Name': stat.name,
-      'Total Days Active': stat.daysActive.size,
-      'Total Tickets Assigned': stat.totalTickets,
-      'Tickets Completed': stat.completedTickets
+      'Engineer Name': stat.name,
+      'Engineer ID': stat.employeeId,
+      'Number of Unique IDs': stat.uniqueIds.size,
+      'Assigned': stat.statusCounts['Assigned'],
+      'Completed': stat.statusCounts['Activity Completed'] + stat.statusCounts['Leaving the Site'],
+      'Cancelled': stat.statusCounts['Cancelled'],
+      'Attempted': stat.statusCounts['Attempted'],
+      'Travelling/Start Journey': stat.statusCounts['Start Journey'] + stat.statusCounts['Travelling'],
+      'Reached the Site': stat.statusCounts['Reached the Site'],
+      'Total Working Days': stat.daysActive.size,
+      'Total Activity Attended': stat.totalTickets
     }));
 
     // Format raw data flat per ticket
@@ -599,14 +620,51 @@ export default function AdminDashboard() {
                     <Activity size={20} />
                   </div>
                   <div className="flex-1 flex justify-between items-start pr-8">
-                    <div>
-                      <h3 className="text-lg font-bold text-gray-800">Activity Timeline: {selectedTicket.ticket_id}</h3>
-                      <p className="text-sm text-gray-500">Engineer: {selectedTicket.engineer_name} ({selectedTicket.employee_id})</p>
+                    <div className="flex-1 pr-4">
+                      <div className="flex flex-wrap items-center gap-1.5 text-sm font-bold text-gray-800">
+                        <span className="text-indigo-600">{selectedTicket.ticket_id}</span>
+                        <ChevronRight size={14} className="text-gray-400" />
+                        <span>{selectedTicket.engineer_name} <span className="text-gray-500 font-medium">({selectedTicket.employee_id})</span></span>
+                        <ChevronRight size={14} className="text-gray-400" />
+                        <span className="flex items-center gap-1 text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded"><Calendar size={12} /> {selectedTicket.date}</span>
+                        <ChevronRight size={14} className="text-gray-400" />
+                        <span className="flex items-center gap-1 text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded"><Clock size={12} /> {selectedTicket.activity_time || 'N/A'}</span>
+                      </div>
+                      {selectedTicket.project_name && (
+                        <p className="text-[11px] font-medium text-gray-600 mt-2 flex items-center gap-1">
+                          <Briefcase size={12} className="text-gray-400" /> {selectedTicket.project_name}
+                        </p>
+                      )}
+                      {selectedTicket.remarks && (
+                        <div className="text-[11px] text-gray-600 mt-1.5 bg-gray-50 border border-gray-100 p-2 rounded-md flex items-start gap-1.5">
+                          <MessageSquare size={12} className="text-gray-400 mt-0.5 flex-shrink-0" />
+                          <span className="italic">{selectedTicket.remarks}</span>
+                        </div>
+                      )}
                     </div>
-                    <div className="text-right bg-indigo-50/50 p-2 rounded-lg border border-indigo-50 hidden sm:block">
-                      <p className="text-xs font-bold text-indigo-800 flex items-center justify-end gap-1 mb-0.5"><MapPin size={12}/> Current Location</p>
-                      <p className="text-[10px] text-indigo-600 font-mono">{selectedTicket.latest_lat}, {selectedTicket.latest_lng}</p>
-                      <p className="text-[10px] text-indigo-400">{selectedTicket.latest_city}</p>
+                    <div className="text-right bg-indigo-50/50 p-3 rounded-lg border border-indigo-100 hidden sm:flex flex-col items-end">
+                      <p className="text-xs font-bold text-indigo-800 flex items-center gap-1 mb-1.5"><MapPin size={12}/> Current Location</p>
+                      <div className="flex items-center gap-2 bg-white px-2 py-1 rounded-md border border-indigo-50 shadow-sm">
+                        <a 
+                          href={`https://www.google.com/maps/search/?api=1&query=${selectedTicket.latest_lat},${selectedTicket.latest_lng}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="text-[10px] text-indigo-600 font-mono hover:underline hover:text-indigo-800"
+                          title="View on Google Maps"
+                        >
+                          {selectedTicket.latest_lat}, {selectedTicket.latest_lng}
+                        </a>
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(`Ticket ${selectedTicket.ticket_id} Location: https://www.google.com/maps/search/?api=1&query=${selectedTicket.latest_lat},${selectedTicket.latest_lng}`);
+                            alert("Location link copied to clipboard!");
+                          }}
+                          className="p-1 bg-indigo-50 text-indigo-600 rounded hover:bg-indigo-200 transition-colors"
+                          title="Copy Location Link"
+                        >
+                          <Share2 size={12} />
+                        </button>
+                      </div>
+                      <p className="text-[10px] text-indigo-400 mt-1.5">{selectedTicket.latest_city}</p>
                     </div>
                   </div>
                 </div>
@@ -629,15 +687,26 @@ export default function AdminDashboard() {
                         </div>
                         <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 w-full text-center hover:shadow-md transition-shadow">
                           <p className="text-xs font-bold text-gray-700 mb-1">{statusName}</p>
+                          {details.remark && (
+                            <div className="bg-amber-50 text-amber-700 text-[9px] p-1.5 rounded border border-amber-200 mb-1.5 text-left font-medium leading-tight shadow-sm line-clamp-3" title={details.remark}>
+                              <MessageSquare size={10} className="inline mr-1 mb-0.5" />
+                              {details.remark}
+                            </div>
+                          )}
                           <div className="text-[10px] text-gray-500 flex flex-col items-center justify-center gap-0.5 mb-1">
                             <span className="flex items-center gap-1"><Clock size={10} /> {details.time || 'N/A'}</span>
                             {details.date && <span className="text-[9px] font-mono text-gray-400 bg-white px-1 py-0.5 rounded border border-gray-100">{details.date}</span>}
                           </div>
                           {details.lat && details.lng && (
-                            <p className="text-[9px] text-gray-400 flex flex-col items-center justify-center font-mono bg-white rounded border border-gray-100 p-1 mt-1">
-                              <span className="flex items-center gap-1 text-indigo-400 mb-0.5"><MapPin size={8} /> GPS Logged</span>
+                            <a 
+                              href={`https://www.google.com/maps/search/?api=1&query=${details.lat},${details.lng}`}
+                              target="_blank" rel="noopener noreferrer"
+                              className="text-[9px] text-gray-500 hover:text-indigo-700 hover:border-indigo-300 hover:shadow-sm flex flex-col items-center justify-center font-mono bg-white rounded border border-gray-200 p-1 mt-1 transition-all"
+                              title="View on Google Maps"
+                            >
+                              <span className="flex items-center gap-1 text-indigo-500 mb-0.5"><MapPin size={8} /> GPS Logged</span>
                               {parseFloat(details.lat).toFixed(5)}, {parseFloat(details.lng).toFixed(5)}
-                            </p>
+                            </a>
                           )}
                         </div>
                       </div>
@@ -691,7 +760,14 @@ export default function AdminDashboard() {
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {getStatModalData().map((item) => (
-                    <div key={item.id} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-2">
+                    <div 
+                      key={item.id} 
+                      onClick={() => {
+                        setSelectedTicket(item);
+                        setStatModalConfig({ isOpen: false, title: '', type: '' });
+                      }}
+                      className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-2 cursor-pointer hover:border-indigo-200 hover:shadow-md transition-all"
+                    >
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-bold text-sm text-gray-800">{item.engineer_name}</p>

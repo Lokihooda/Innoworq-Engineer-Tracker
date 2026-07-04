@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { MapPin, User, Hash, Ticket, Briefcase, MessageSquare, Send, ShieldCheck, ChevronRight, Search, Download, Calendar } from 'lucide-react';
 import * as XLSX from 'xlsx';
+import { registerPlugin, Capacitor } from '@capacitor/core';
+import { BatteryOptimization } from '@capawesome-team/capacitor-android-battery-optimization';
+const BackgroundGeolocation = registerPlugin('BackgroundGeolocation');
 
 export default function EngineerPortal() {
   const navigate = useNavigate();
   const [gpsLoading, setGpsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [finding, setFinding] = useState(false);
-  
+
   const [location, setLocation] = useState(null);
   const [city, setCity] = useState('');
   const [message, setMessage] = useState(null);
@@ -33,6 +36,37 @@ export default function EngineerPortal() {
     projectName: ''
   });
 
+  const [hasConsent, setHasConsent] = useState(localStorage.getItem('tracking_consent') === 'true');
+  const [consentSubmitting, setConsentSubmitting] = useState(false);
+
+  const handleConsentSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.name || !formData.employeeId) {
+      setMessage({ type: 'error', text: 'Name and Employee ID are required for consent.' });
+      return;
+    }
+    setConsentSubmitting(true);
+    const deviceId = localStorage.getItem('eng_deviceId');
+    const { error } = await supabase.from('user_consents').insert([{
+      employee_id: formData.employeeId,
+      engineer_name: formData.name,
+      device_id: deviceId,
+      consent_given_at: new Date().toISOString()
+    }]);
+
+    if (error) {
+      console.error(error);
+      setMessage({ type: 'error', text: 'Failed to record consent: ' + error.message });
+      setConsentSubmitting(false);
+    } else {
+      localStorage.setItem('tracking_consent', 'true');
+      setHasConsent(true);
+      setConsentSubmitting(false);
+      setMessage({ type: 'success', text: 'Consent recorded successfully.' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
   useEffect(() => {
     // Check if engineer details are saved
     const savedName = localStorage.getItem('eng_name');
@@ -40,7 +74,7 @@ export default function EngineerPortal() {
     if (savedName && savedEmpId) {
       setFormData(prev => ({ ...prev, name: savedName, employeeId: savedEmpId }));
     }
-    
+
     // Ensure device ID exists
     if (!localStorage.getItem('eng_deviceId')) {
       localStorage.setItem('eng_deviceId', 'DEV-' + Math.random().toString(36).substring(2, 10));
@@ -50,12 +84,26 @@ export default function EngineerPortal() {
   // Background Location Tracking
   useEffect(() => {
     let watchId;
+    let isNativeTracker = false;
     let lastUpdateTime = 0;
 
-    const startTracking = () => {
-      if (navigator.geolocation) {
-        watchId = navigator.geolocation.watchPosition(
-          async (pos) => {
+    const startTracking = async () => {
+      try {
+        // Try Capacitor native background geolocation
+        BackgroundGeolocation.addWatcher(
+          {
+            backgroundMessage: "Tracking active in background to update dispatcher.",
+            backgroundTitle: "Innoworq GPS Tracking",
+            requestPermissions: true,
+            stale: false,
+            distanceFilter: 10 // Update every 10 meters
+          },
+          async function callback(location, error) {
+            if (error) {
+              console.error('Native background tracking error:', error);
+              return;
+            }
+
             const trackingTicketId = localStorage.getItem('tracking_ticket_id');
             if (!trackingTicketId) return;
 
@@ -64,9 +112,47 @@ export default function EngineerPortal() {
             if (now - lastUpdateTime < 30000) return;
             lastUpdateTime = now;
 
+            const lat = location.latitude;
+            const lng = location.longitude;
+
+            try {
+              await supabase.from('ticket_tracking')
+                .update({
+                  latest_lat: lat,
+                  latest_lng: lng,
+                })
+                .eq('id', trackingTicketId);
+            } catch (err) {
+              console.error("Failed to update background location", err);
+            }
+          }
+        ).then(watcher_id => {
+          watchId = watcher_id;
+          isNativeTracker = true;
+        }).catch(err => {
+          console.log('Falling back to web geolocation:', err);
+          startWebTracking();
+        });
+      } catch (e) {
+        console.log('Capacitor not available, falling back to web tracking');
+        startWebTracking();
+      }
+    };
+
+    const startWebTracking = () => {
+      if (navigator.geolocation) {
+        watchId = navigator.geolocation.watchPosition(
+          async (pos) => {
+            const trackingTicketId = localStorage.getItem('tracking_ticket_id');
+            if (!trackingTicketId) return;
+
+            const now = Date.now();
+            if (now - lastUpdateTime < 30000) return;
+            lastUpdateTime = now;
+
             const lat = pos.coords.latitude;
             const lng = pos.coords.longitude;
-            
+
             try {
               await supabase.from('ticket_tracking')
                 .update({
@@ -89,7 +175,9 @@ export default function EngineerPortal() {
     startTracking();
 
     return () => {
-      if (watchId && navigator.geolocation) {
+      if (isNativeTracker && watchId) {
+        BackgroundGeolocation.removeWatcher({ id: watchId });
+      } else if (watchId && navigator.geolocation) {
         navigator.geolocation.clearWatch(watchId);
       }
     };
@@ -104,7 +192,7 @@ export default function EngineerPortal() {
           const lng = pos.coords.longitude;
           setLocation({ lat, lng });
           setGpsLoading(false); // Stop loading immediately (resolves in ms)
-          
+
           // Fetch city in the background without blocking the UI
           fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
             .then(res => res.json())
@@ -128,7 +216,11 @@ export default function EngineerPortal() {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (name === 'ticketId') {
+      // Remove any special characters, only allow alphanumeric
+      value = value.replace(/[^a-zA-Z0-9]/g, '');
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
@@ -137,7 +229,7 @@ export default function EngineerPortal() {
       setMessage({ type: 'error', text: 'Please enter a Ticket ID to search.' });
       return;
     }
-    
+
     setFinding(true);
     setMessage(null);
 
@@ -158,13 +250,13 @@ export default function EngineerPortal() {
       } else {
         // 24 Hour Expiry Check
         const isExpired = ticketData.created_at && (new Date() - new Date(ticketData.created_at)) > 24 * 60 * 60 * 1000;
-        
+
         if (isExpired) {
           setActiveTicket({ isNew: true });
           setMessage({ type: 'success', text: 'Previous session for this ticket expired (>24h). You can start a new session.' });
-          setFormData(prev => ({ 
-            ...prev, 
-            status: '', 
+          setFormData(prev => ({
+            ...prev,
+            status: '',
             remarks: '',
             activityDate: new Date().toISOString().split('T')[0],
             activityStartTime: '',
@@ -179,10 +271,10 @@ export default function EngineerPortal() {
           } else {
             setMessage({ type: 'success', text: `Found ticket! Current Status: ${ticketData.current_status}` });
           }
-          setFormData(prev => ({ 
-            ...prev, 
+          setFormData(prev => ({
+            ...prev,
             status: '', // Require them to manually select the next status
-            name: ticketData.engineer_name || prev.name, 
+            name: ticketData.engineer_name || prev.name,
             employeeId: ticketData.employee_id || prev.employeeId,
             remarks: ticketData.remarks || '',
             activityDate: ticketData.date || prev.activityDate,
@@ -211,6 +303,19 @@ export default function EngineerPortal() {
       return;
     }
 
+    if (Capacitor.getPlatform() === 'android') {
+      try {
+        const { enabled } = await BatteryOptimization.isBatteryOptimizationEnabled();
+        if (enabled) {
+          setMessage({ type: 'error', text: 'Please select "Unrestricted" or "Allow" to enable background tracking, then try again.' });
+          await BatteryOptimization.requestIgnoreBatteryOptimization();
+          return;
+        }
+      } catch (err) {
+        console.error('Battery optimization check failed:', err);
+      }
+    }
+
     setSubmitting(true);
     const deviceId = localStorage.getItem('eng_deviceId');
     const realToday = new Date().toISOString().split('T')[0];
@@ -222,13 +327,14 @@ export default function EngineerPortal() {
       time: currentTime,
       lat: location.lat,
       lng: location.lng,
-      city: city
+      city: city,
+      remark: formData.remarks
     };
 
     if (activeTicket.isNew) {
       // Create new ticket row
       const newHistory = { [formData.status]: statusUpdatePayload };
-      
+
       const { data, error } = await supabase.from('ticket_tracking').insert([{
         ticket_id: formData.ticketId,
         date: formData.activityDate,
@@ -254,9 +360,9 @@ export default function EngineerPortal() {
       }
     } else {
       // Update existing ticket row
-      const updatedHistory = { 
-        ...activeTicket.status_history, 
-        [formData.status]: statusUpdatePayload 
+      const updatedHistory = {
+        ...activeTicket.status_history,
+        [formData.status]: statusUpdatePayload
       };
 
       const { error } = await supabase.from('ticket_tracking')
@@ -283,7 +389,7 @@ export default function EngineerPortal() {
   const handleSuccess = (msg, status, ticketDbId) => {
     localStorage.setItem('eng_name', formData.name);
     localStorage.setItem('eng_empId', formData.employeeId);
-    
+
     if (status === 'Start Journey' || status === 'Travelling') {
       localStorage.setItem('tracking_ticket_id', ticketDbId);
     } else if (['Reached the Site', 'Activity Completed', 'Leaving the Site', 'Attempted', 'Cancelled'].includes(status)) {
@@ -292,10 +398,10 @@ export default function EngineerPortal() {
 
     setMessage({ type: 'success', text: msg });
     setActiveTicket(null);
-    setFormData(prev => ({ 
-      ...prev, 
-      ticketId: '', 
-      status: '', 
+    setFormData(prev => ({
+      ...prev,
+      ticketId: '',
+      status: '',
       remarks: '',
       activityDate: new Date().toISOString().split('T')[0],
       activityStartTime: '',
@@ -311,10 +417,10 @@ export default function EngineerPortal() {
       setMessage({ type: 'error', text: 'Please enter an Employee ID to view data.' });
       return;
     }
-    
+
     setIsFetchingData(true);
     setFetchedData(null);
-    
+
     const { data: reportData, error } = await supabase
       .from('ticket_tracking')
       .select('*')
@@ -355,31 +461,31 @@ export default function EngineerPortal() {
         'Project Name': ticket.project_name || '',
         'Ticket ID': ticket.ticket_id,
         'Current Status': ticket.current_status,
-        
+
         'Assigned (Date/Time)': hist['Assigned'] ? `${hist['Assigned'].date || ''} ${hist['Assigned'].time || ''}`.trim() : '',
         'Assigned (Lat/Lng)': hist['Assigned'] ? `${hist['Assigned'].lat}, ${hist['Assigned'].lng}` : '',
-        
+
         'Start Journey (Date/Time)': hist['Start Journey'] ? `${hist['Start Journey'].date || ''} ${hist['Start Journey'].time || ''}`.trim() : '',
         'Start Journey (Lat/Lng)': hist['Start Journey'] ? `${hist['Start Journey'].lat}, ${hist['Start Journey'].lng}` : '',
-        
+
         'Travelling (Date/Time)': hist['Travelling'] ? `${hist['Travelling'].date || ''} ${hist['Travelling'].time || ''}`.trim() : '',
         'Travelling (Lat/Lng)': hist['Travelling'] ? `${hist['Travelling'].lat}, ${hist['Travelling'].lng}` : '',
-        
+
         'Reached Site (Date/Time)': hist['Reached the Site'] ? `${hist['Reached the Site'].date || ''} ${hist['Reached the Site'].time || ''}`.trim() : '',
         'Reached Site (Lat/Lng)': hist['Reached the Site'] ? `${hist['Reached the Site'].lat}, ${hist['Reached the Site'].lng}` : '',
-        
+
         'Activity Completed (Date/Time)': hist['Activity Completed'] ? `${hist['Activity Completed'].date || ''} ${hist['Activity Completed'].time || ''}`.trim() : '',
         'Activity Completed (Lat/Lng)': hist['Activity Completed'] ? `${hist['Activity Completed'].lat}, ${hist['Activity Completed'].lng}` : '',
-        
+
         'Leaving Site (Date/Time)': hist['Leaving the Site'] ? `${hist['Leaving the Site'].date || ''} ${hist['Leaving the Site'].time || ''}`.trim() : '',
         'Leaving Site (Lat/Lng)': hist['Leaving the Site'] ? `${hist['Leaving the Site'].lat}, ${hist['Leaving the Site'].lng}` : '',
-        
+
         'Attempted (Date/Time)': hist['Attempted'] ? `${hist['Attempted'].date || ''} ${hist['Attempted'].time || ''}`.trim() : '',
         'Attempted (Lat/Lng)': hist['Attempted'] ? `${hist['Attempted'].lat}, ${hist['Attempted'].lng}` : '',
-        
+
         'Cancelled (Date/Time)': hist['Cancelled'] ? `${hist['Cancelled'].date || ''} ${hist['Cancelled'].time || ''}`.trim() : '',
         'Cancelled (Lat/Lng)': hist['Cancelled'] ? `${hist['Cancelled'].lat}, ${hist['Cancelled'].lng}` : '',
-        
+
         'Latest City': ticket.latest_city || '',
         'Remarks': ticket.remarks || ''
       };
@@ -408,7 +514,7 @@ export default function EngineerPortal() {
   };
 
   const availableStatuses = activeTicket
-    ? STATUS_FLOW[activeTicket.isNew ? '' : activeTicket.current_status] || [] 
+    ? STATUS_FLOW[activeTicket.isNew ? '' : activeTicket.current_status] || []
     : [];
 
   const getStatusLabel = (s) => {
@@ -422,7 +528,7 @@ export default function EngineerPortal() {
 
   return (
     <div className="container p-4 mx-auto max-w-md min-h-screen flex flex-col justify-center py-10">
-      
+
       {/* Header */}
       <header className="glass-card mb-8 p-6 text-center rounded-2xl">
         <h1 className="text-3xl font-bold text-gradient mb-2">Innoworq</h1>
@@ -434,7 +540,36 @@ export default function EngineerPortal() {
         <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-40 h-40 rounded-full bg-secondary/10 blur-2xl"></div>
 
         <div className="relative z-10">
-          {!location ? (
+          {!hasConsent ? (
+            <div className="animate-fade-in pb-4">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ShieldCheck size={28} />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-800">Tracking Consent</h2>
+                <p className="text-sm text-gray-500 mt-2">Required under the DPDP Act</p>
+              </div>
+              <div className="bg-gray-50 p-4 rounded-xl text-sm text-gray-600 mb-6 border border-gray-100 h-40 overflow-y-auto custom-scrollbar">
+                <p className="font-semibold mb-2 text-gray-800">Privacy Notice & Consent</p>
+                <p className="mb-2">By using the Innoworq Field Service Portal, you consent to the continuous collection of your device's GPS location data.</p>
+                <p className="mb-2"><strong>Why we collect this:</strong> To verify site visits, ensure safety, and coordinate dispatching in real-time.</p>
+                <p><strong>Background Tracking:</strong> Location data may be collected even when the app is minimized to keep the dispatcher dashboard updated.</p>
+              </div>
+              <form onSubmit={handleConsentSubmit} className="space-y-4">
+                <div className="form-group">
+                  <label className="text-xs text-gray-500 font-semibold uppercase">Full Name</label>
+                  <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="John Doe" className="input-field py-2 text-sm" />
+                </div>
+                <div className="form-group mb-4">
+                  <label className="text-xs text-gray-500 font-semibold uppercase">Employee ID</label>
+                  <input type="text" name="employeeId" value={formData.employeeId} onChange={handleInputChange} required placeholder="EMP123" className="input-field py-2 text-sm" />
+                </div>
+                <button type="submit" disabled={consentSubmitting} className="btn-primary w-full py-3.5 mt-2 rounded-xl text-md font-bold flex items-center justify-center gap-2 shadow-lg shadow-indigo-200 transition-transform active:scale-95">
+                  {consentSubmitting ? <div className="spinner border-white border-t-transparent"></div> : <><ShieldCheck size={18} /> I Agree & Give Consent</>}
+                </button>
+              </form>
+            </div>
+          ) : !location ? (
             <div className="text-center py-8">
               <div className="w-20 h-20 mx-auto bg-indigo-100 rounded-full flex items-center justify-center mb-6 animate-pulse-slow">
                 <MapPin size={36} className="text-primary" />
@@ -443,8 +578,8 @@ export default function EngineerPortal() {
               <p className="text-gray-600 mb-8 text-sm leading-relaxed">
                 We need your GPS coordinates to verify your site visit. Please enable location services.
               </p>
-              <button 
-                onClick={requestGPS} 
+              <button
+                onClick={requestGPS}
                 disabled={gpsLoading}
                 className="btn-primary w-full py-4 rounded-xl text-lg flex items-center justify-center gap-2 transition-transform active:scale-95"
               >
@@ -465,16 +600,16 @@ export default function EngineerPortal() {
               <div className="form-group mb-6">
                 <label className="text-sm font-semibold text-gray-700 mb-1 block"><Ticket size={16} className="inline mr-1" /> Search Ticket ID</label>
                 <div className="flex gap-2">
-                  <input 
-                    type="text" 
-                    name="ticketId" 
-                    value={formData.ticketId} 
+                  <input
+                    type="text"
+                    name="ticketId"
+                    value={formData.ticketId}
                     onChange={(e) => {
                       handleInputChange(e);
                       if (activeTicket) setActiveTicket(null); // Reset active ticket if they start typing a new one
-                    }} 
-                    placeholder="Enter Ticket ID..." 
-                    className="input-field flex-1 text-lg py-3" 
+                    }}
+                    placeholder="Enter Ticket ID..."
+                    className="input-field flex-1 text-lg py-3"
                   />
                   <button type="button" onClick={findTicket} disabled={finding || !formData.ticketId} className="btn-primary px-6 rounded-xl flex items-center justify-center shadow-md">
                     {finding ? <div className="spinner w-5 h-5 border-2"></div> : <Search size={22} />}
@@ -543,14 +678,14 @@ export default function EngineerPortal() {
                       </div>
                     </>
                   )}
-                  
+
                   <div className="form-group">
                     <label className="text-xs text-gray-500 font-semibold uppercase">New Status</label>
-                    <select 
-                      name="status" 
-                      value={formData.status} 
-                      onChange={handleInputChange} 
-                      required 
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      required
                       className="input-field py-2.5"
                       disabled={availableStatuses.length === 0}
                     >
@@ -560,14 +695,14 @@ export default function EngineerPortal() {
                       ))}
                     </select>
                   </div>
-                  
+
                   <div className="form-group">
                     <label className="text-xs text-gray-500 font-semibold uppercase">Remark</label>
-                    <input type="text" name="remarks" value={formData.remarks} onChange={handleInputChange} placeholder="Any notes..." className="input-field py-2.5" />
+                    <input type="text" name="remarks" value={formData.remarks} onChange={handleInputChange} required placeholder="Any notes..." className="input-field py-2.5" />
                   </div>
 
-                  <button 
-                    type="submit" 
+                  <button
+                    type="submit"
                     disabled={submitting || availableStatuses.length === 0}
                     className={`btn-primary w-full py-3.5 mt-2 rounded-xl text-md font-bold flex items-center justify-center gap-2 shadow-lg ${availableStatuses.length === 0 ? 'opacity-50 cursor-not-allowed' : 'shadow-indigo-200'}`}
                   >
@@ -587,13 +722,13 @@ export default function EngineerPortal() {
               <div className="flex gap-2">
                 <div className="flex-1">
                   <label className="text-xs text-gray-500 font-semibold uppercase mb-1 block">Employee ID</label>
-                  <input 
-                    type="text" 
-                    name="employeeId" 
-                    value={formData.employeeId} 
-                    onChange={handleInputChange} 
-                    placeholder="EMP123" 
-                    className="input-field w-full py-2 text-sm" 
+                  <input
+                    type="text"
+                    name="employeeId"
+                    value={formData.employeeId}
+                    onChange={handleInputChange}
+                    placeholder="EMP123"
+                    className="input-field w-full py-2 text-sm"
                   />
                 </div>
               </div>
@@ -602,8 +737,8 @@ export default function EngineerPortal() {
                   <label className="text-xs text-gray-500 font-semibold uppercase mb-1 block">From Date</label>
                   <div className="relative">
                     <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={fromDate}
                       onChange={(e) => setFromDate(e.target.value)}
                       className="input-field w-full py-2 pl-8 text-sm"
@@ -614,8 +749,8 @@ export default function EngineerPortal() {
                   <label className="text-xs text-gray-500 font-semibold uppercase mb-1 block">To Date</label>
                   <div className="relative">
                     <Calendar className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" size={14} />
-                    <input 
-                      type="date" 
+                    <input
+                      type="date"
                       value={toDate}
                       onChange={(e) => setToDate(e.target.value)}
                       className="input-field w-full py-2 pl-8 text-sm"
@@ -623,10 +758,10 @@ export default function EngineerPortal() {
                   </div>
                 </div>
               </div>
-              <button 
-                type="button" 
-                onClick={fetchMyData} 
-                disabled={isFetchingData || !formData.employeeId || !fromDate || !toDate} 
+              <button
+                type="button"
+                onClick={fetchMyData}
+                disabled={isFetchingData || !formData.employeeId || !fromDate || !toDate}
                 className="btn-primary w-full py-2.5 rounded-xl flex items-center justify-center gap-2 text-sm shadow-md"
               >
                 {isFetchingData ? <div className="spinner w-4 h-4 border-2"></div> : <><Search size={16} /> Fetch Data</>}
@@ -637,10 +772,10 @@ export default function EngineerPortal() {
               <div className="mt-6 animate-slide-up">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="text-sm font-semibold text-gray-700">Records Found: {fetchedData.length}</h4>
-                  <button 
-                    type="button" 
-                    onClick={downloadExcel} 
-                    disabled={isDownloading} 
+                  <button
+                    type="button"
+                    onClick={downloadExcel}
+                    disabled={isDownloading}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg flex items-center justify-center gap-1.5 text-xs font-semibold shadow-sm transition-colors"
                   >
                     {isDownloading ? <div className="spinner w-3 h-3 border-2"></div> : <><Download size={14} /> Download Excel</>}
@@ -675,8 +810,8 @@ export default function EngineerPortal() {
       </div>
 
       <div className="mt-8 text-center">
-        <button 
-          onClick={() => navigate('/admin')} 
+        <button
+          onClick={() => navigate('/admin')}
           className="inline-flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
         >
           <ShieldCheck size={16} />

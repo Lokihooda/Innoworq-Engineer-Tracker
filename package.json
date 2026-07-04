@@ -10,6 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor-community/background-geolocation": "^1.2.26",
+    "@capacitor/android": "^8.4.1",
+    "@capacitor/core": "^8.4.1",
+    "@capawesome-team/capacitor-android-battery-optimization": "^8.0.1",
     "@supabase/supabase-js": "^2.108.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.18.0",
@@ -20,6 +24,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.1",
     "@eslint/js": "^10.0.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
@@ -28,6 +33,7 @@
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
+    "eslint-plugin-security": "^4.0.1",
     "globals": "^17.6.0",
     "postcss": "^8.5.15",
     "tailwindcss": "^3.4.19",
