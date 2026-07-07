@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { MapPin, User, Hash, Ticket, Briefcase, MessageSquare, Send, ShieldCheck, ChevronRight, Search, Download, Calendar } from 'lucide-react';
@@ -38,6 +38,62 @@ export default function EngineerPortal() {
 
   const [hasConsent, setHasConsent] = useState(localStorage.getItem('tracking_consent') === 'true');
   const [consentSubmitting, setConsentSubmitting] = useState(false);
+  const [recentTickets, setRecentTickets] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [dropdownRef]);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('recent_tickets');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        const now = Date.now();
+        const twoDays = 2 * 24 * 60 * 60 * 1000;
+        const valid = parsed.filter(t => now - t.timestamp < twoDays);
+        setRecentTickets(valid);
+        if (valid.length !== parsed.length) {
+          localStorage.setItem('recent_tickets', JSON.stringify(valid));
+        }
+      } catch (e) {}
+    }
+  }, []);
+
+  const addRecentTicket = (ticketId, activityDate) => {
+    if (!ticketId) return;
+    setRecentTickets(prev => {
+      const now = Date.now();
+      const twoDays = 2 * 24 * 60 * 60 * 1000;
+      const valid = prev.filter(t => t.ticketId !== ticketId && now - t.timestamp < twoDays);
+      const updated = [{ 
+        ticketId, 
+        timestamp: now,
+        activityDate: activityDate || new Date().toISOString().split('T')[0]
+      }, ...valid];
+      localStorage.setItem('recent_tickets', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const removeRecentTicket = (ticketId) => {
+    if (!ticketId) return;
+    setRecentTickets(prev => {
+      const updated = prev.filter(t => t.ticketId !== ticketId);
+      localStorage.setItem('recent_tickets', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   const handleConsentSubmit = async (e) => {
     e.preventDefault();
@@ -193,18 +249,23 @@ export default function EngineerPortal() {
           setLocation({ lat, lng });
           setGpsLoading(false); // Stop loading immediately (resolves in ms)
 
-          // Fetch city in the background without blocking the UI
+          // Fetch full address text in the background without blocking the UI
           fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`)
             .then(res => res.json())
             .then(data => {
-              setCity(data.address?.city || data.address?.town || data.address?.county || "Unknown Location");
+              setCity(data.display_name || "Unknown Location");
             })
             .catch(() => setCity("Unknown Location"));
         },
         (err) => {
           console.error(err);
-          setMessage({ type: 'error', text: 'Location access denied or timeout. Please check GPS settings.' });
+          setMessage({ type: 'error', text: 'Location access denied. Redirecting to settings...' });
           setGpsLoading(false);
+          if (Capacitor.isNativePlatform()) {
+            setTimeout(() => {
+              BackgroundGeolocation.openSettings().catch(e => console.error("Could not open settings", e));
+            }, 1500);
+          }
         },
         // Optimize for speed: allow slightly cached locations, turn off high accuracy satellite search, and timeout quickly
         { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 }
@@ -254,6 +315,7 @@ export default function EngineerPortal() {
         if (isExpired) {
           setActiveTicket({ isNew: true });
           setMessage({ type: 'success', text: 'Previous session for this ticket expired (>24h). You can start a new session.' });
+          addRecentTicket(formData.ticketId, ticketData.date);
           setFormData(prev => ({
             ...prev,
             status: '',
@@ -266,10 +328,12 @@ export default function EngineerPortal() {
           }));
         } else {
           setActiveTicket(ticketData);
-          if (ticketData.current_status === 'Leaving the Site') {
-            setMessage({ type: 'error', text: 'This ticket is already completed (Leaving the Site).' });
+          if (ticketData.current_status === 'Leaving the Site' || ticketData.current_status === 'Cancelled') {
+            setMessage({ type: 'error', text: `This ticket is already completed (${ticketData.current_status}).` });
+            removeRecentTicket(formData.ticketId);
           } else {
             setMessage({ type: 'success', text: `Found ticket! Current Status: ${ticketData.current_status}` });
+            addRecentTicket(formData.ticketId, ticketData.date);
           }
           setFormData(prev => ({
             ...prev,
@@ -288,6 +352,7 @@ export default function EngineerPortal() {
     } else {
       setActiveTicket({ isNew: true });
       setMessage({ type: 'success', text: 'No existing record found. You can start this ticket.' });
+      addRecentTicket(formData.ticketId, formData.activityDate);
     }
     setFinding(false);
   };
@@ -387,6 +452,14 @@ export default function EngineerPortal() {
   };
 
   const handleSuccess = (msg, status, ticketDbId) => {
+    const currentTicketId = formData.ticketId;
+    
+    if (status === 'Leaving the Site' || status === 'Cancelled') {
+      removeRecentTicket(currentTicketId);
+    } else {
+      addRecentTicket(currentTicketId, formData.activityDate);
+    }
+
     localStorage.setItem('eng_name', formData.name);
     localStorage.setItem('eng_empId', formData.employeeId);
 
@@ -600,17 +673,40 @@ export default function EngineerPortal() {
               <div className="form-group mb-6">
                 <label className="text-sm font-semibold text-gray-700 mb-1 block"><Ticket size={16} className="inline mr-1" /> Search Ticket ID</label>
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    name="ticketId"
-                    value={formData.ticketId}
-                    onChange={(e) => {
-                      handleInputChange(e);
-                      if (activeTicket) setActiveTicket(null); // Reset active ticket if they start typing a new one
-                    }}
-                    placeholder="Enter Ticket ID..."
-                    className="input-field flex-1 text-lg py-3"
-                  />
+                  <div className="relative flex-1" ref={dropdownRef}>
+                    <input
+                      type="text"
+                      name="ticketId"
+                      value={formData.ticketId}
+                      onChange={(e) => {
+                        handleInputChange(e);
+                        if (activeTicket) setActiveTicket(null); // Reset active ticket if they start typing a new one
+                        setShowDropdown(true);
+                      }}
+                      onFocus={() => setShowDropdown(true)}
+                      placeholder="Enter Ticket ID..."
+                      className="input-field w-full text-lg py-3"
+                      autoComplete="off"
+                    />
+                    {showDropdown && recentTickets.length > 0 && (
+                      <ul className="absolute z-50 w-full bg-white border border-gray-200 mt-1 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar overflow-hidden">
+                        {recentTickets.map(t => (
+                          <li
+                            key={t.ticketId}
+                            className="px-4 py-3 hover:bg-indigo-50 cursor-pointer border-b last:border-b-0 border-gray-100 transition-colors flex justify-between items-center"
+                            onClick={() => {
+                              setFormData(prev => ({ ...prev, ticketId: t.ticketId }));
+                              if (activeTicket) setActiveTicket(null);
+                              setShowDropdown(false);
+                            }}
+                          >
+                            <span className="text-gray-700 font-bold text-sm">{t.ticketId}</span>
+                            {t.activityDate && <span className="text-xs text-gray-400 font-medium">{t.activityDate}</span>}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
                   <button type="button" onClick={findTicket} disabled={finding || !formData.ticketId} className="btn-primary px-6 rounded-xl flex items-center justify-center shadow-md">
                     {finding ? <div className="spinner w-5 h-5 border-2"></div> : <Search size={22} />}
                   </button>
@@ -635,11 +731,11 @@ export default function EngineerPortal() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="form-group">
                       <label className="text-xs text-gray-500 font-semibold uppercase">Engineer Name</label>
-                      <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="John Doe" className="input-field py-2 text-sm" />
+                      <input type="text" name="name" value={formData.name} onChange={handleInputChange} required placeholder="John Doe" className={`input-field py-2 text-sm ${!activeTicket.isNew ? 'bg-gray-50 text-gray-500 cursor-not-allowed font-medium' : ''}`} readOnly={!activeTicket.isNew} />
                     </div>
                     <div className="form-group">
                       <label className="text-xs text-gray-500 font-semibold uppercase">Employee ID</label>
-                      <input type="text" name="employeeId" value={formData.employeeId} onChange={handleInputChange} required placeholder="EMP123" className="input-field py-2 text-sm" />
+                      <input type="text" name="employeeId" value={formData.employeeId} onChange={handleInputChange} required placeholder="EMP123" className={`input-field py-2 text-sm ${!activeTicket.isNew ? 'bg-gray-50 text-gray-500 cursor-not-allowed font-medium' : ''}`} readOnly={!activeTicket.isNew} />
                     </div>
                   </div>
 
@@ -648,36 +744,32 @@ export default function EngineerPortal() {
                     <input type="text" value={formData.ticketId} readOnly className="input-field py-2 text-sm bg-gray-50 text-gray-500 cursor-not-allowed font-medium" />
                   </div>
 
-                  {activeTicket.isNew && (
-                    <>
-                      <div className="form-group">
-                        <label className="text-xs text-gray-500 font-semibold uppercase">Activity Date</label>
-                        <input type="date" name="activityDate" value={formData.activityDate} onChange={handleInputChange} required className="input-field py-2 text-sm" />
-                      </div>
+                  <div className="form-group">
+                    <label className="text-xs text-gray-500 font-semibold uppercase">Activity Date</label>
+                    <input type="date" name="activityDate" value={formData.activityDate} onChange={handleInputChange} required className={`input-field py-2 text-sm ${!activeTicket.isNew ? 'bg-gray-50 text-gray-500 cursor-not-allowed font-medium' : ''}`} readOnly={!activeTicket.isNew} />
+                  </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="form-group">
-                          <label className="text-xs text-gray-500 font-semibold uppercase">Start Time</label>
-                          <input type="time" name="activityStartTime" value={formData.activityStartTime} onChange={handleInputChange} required className="input-field py-2 px-2 text-sm" />
-                        </div>
-                        <div className="form-group">
-                          <label className="text-xs text-gray-500 font-semibold uppercase">End Time</label>
-                          <input type="time" name="activityEndTime" value={formData.activityEndTime} onChange={handleInputChange} required className="input-field py-2 px-2 text-sm" />
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="form-group">
+                      <label className="text-xs text-gray-500 font-semibold uppercase">Start Time</label>
+                      <input type="time" name="activityStartTime" value={formData.activityStartTime} onChange={handleInputChange} required className={`input-field py-2 px-2 text-sm ${!activeTicket.isNew ? 'bg-gray-50 text-gray-500 cursor-not-allowed font-medium' : ''}`} readOnly={!activeTicket.isNew} />
+                    </div>
+                    <div className="form-group">
+                      <label className="text-xs text-gray-500 font-semibold uppercase">End Time</label>
+                      <input type="time" name="activityEndTime" value={formData.activityEndTime} onChange={handleInputChange} required className={`input-field py-2 px-2 text-sm ${!activeTicket.isNew ? 'bg-gray-50 text-gray-500 cursor-not-allowed font-medium' : ''}`} readOnly={!activeTicket.isNew} />
+                    </div>
+                  </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="form-group">
-                          <label className="text-xs text-gray-500 font-semibold uppercase">Project Name</label>
-                          <input type="text" name="projectName" value={formData.projectName} onChange={handleInputChange} required placeholder="Project X" className="input-field py-2 text-sm" />
-                        </div>
-                        <div className="form-group">
-                          <label className="text-xs text-gray-500 font-semibold uppercase">Activity Type</label>
-                          <input type="text" name="activityType" value={formData.activityType} onChange={handleInputChange} required placeholder="Installation" className="input-field py-2 text-sm" />
-                        </div>
-                      </div>
-                    </>
-                  )}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="form-group">
+                      <label className="text-xs text-gray-500 font-semibold uppercase">Project Name</label>
+                      <input type="text" name="projectName" value={formData.projectName} onChange={handleInputChange} required placeholder="Project X" className={`input-field py-2 text-sm ${!activeTicket.isNew ? 'bg-gray-50 text-gray-500 cursor-not-allowed font-medium' : ''}`} readOnly={!activeTicket.isNew} />
+                    </div>
+                    <div className="form-group">
+                      <label className="text-xs text-gray-500 font-semibold uppercase">Activity Type</label>
+                      <input type="text" name="activityType" value={formData.activityType} onChange={handleInputChange} required placeholder="Installation" className={`input-field py-2 text-sm ${!activeTicket.isNew ? 'bg-gray-50 text-gray-500 cursor-not-allowed font-medium' : ''}`} readOnly={!activeTicket.isNew} />
+                    </div>
+                  </div>
 
                   <div className="form-group">
                     <label className="text-xs text-gray-500 font-semibold uppercase">New Status</label>
