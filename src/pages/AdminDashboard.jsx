@@ -661,37 +661,39 @@ export default function AdminDashboard() {
           <div className="lg:col-span-2">
             {selectedTicket ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fade-in relative h-[500px] flex flex-col">
-                <div className="absolute top-4 right-12 flex gap-1 z-10 pr-2 border-r border-gray-100">
+                <div className="absolute top-4 right-4 flex items-center gap-1 z-10 bg-white/80 backdrop-blur shadow-sm border border-gray-100 rounded-full p-1">
                   <button 
                     onClick={() => {
                       setEditFormData(selectedTicket);
                       setIsEditingTicket(!isEditingTicket);
                     }} 
-                    className={`p-2 rounded-full transition-colors ${isEditingTicket ? 'bg-indigo-100 text-indigo-700' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                    className={`p-1.5 rounded-full transition-colors ${isEditingTicket ? 'bg-indigo-100 text-indigo-700' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
                     title="Edit Ticket"
                   >
-                    <Edit2 size={16} />
+                    <Edit2 size={14} />
                   </button>
                   <button 
                     onClick={handleDeleteTicket} 
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                    className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
                     title="Delete Ticket"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
+                  </button>
+                  <div className="w-px h-4 bg-gray-200 mx-0.5"></div>
+                  <button 
+                    onClick={() => {
+                      setSelectedTicket(null);
+                      setIsEditingTicket(false);
+                    }} 
+                    className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                    title="Close"
+                  >
+                    <X size={16} />
                   </button>
                 </div>
-                <button 
-                  onClick={() => {
-                    setSelectedTicket(null);
-                    setIsEditingTicket(false);
-                  }} 
-                  className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-10"
-                >
-                  <X size={18} />
-                </button>
                 
                 {isEditingTicket ? (
-                  <div className="flex-1 overflow-y-auto pr-2 pb-4 mt-8">
+                  <div className="flex-1 overflow-y-auto pr-2 pb-4 mt-10">
                     <h3 className="font-bold text-gray-800 text-lg mb-4 flex items-center gap-2">
                       <Edit2 size={20} className="text-indigo-600" />
                       Edit Ticket Details
@@ -762,7 +764,7 @@ export default function AdminDashboard() {
                   <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Activity size={20} />
                   </div>
-                  <div className="flex-1 flex justify-between items-start pr-8">
+                  <div className="flex-1 flex justify-between items-start pr-24">
                     <div className="flex-1 pr-4">
                       <div className="flex flex-wrap items-center gap-1.5 text-sm font-bold text-gray-800">
                         <span className="text-indigo-600">{selectedTicket.ticket_id}</span>
