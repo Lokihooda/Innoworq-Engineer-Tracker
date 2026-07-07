@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import MapComponent from '../components/MapComponent';
 import * as XLSX from 'xlsx';
-import { Users, Truck, CheckCircle2, MapPin, Search, RefreshCw, Calendar, ArrowLeft, Download, Briefcase, MessageSquare, X, Clock, Activity, LogOut, ChevronRight, Share2 } from 'lucide-react';
+import { Users, Truck, CheckCircle2, MapPin, Search, RefreshCw, Calendar, ArrowLeft, Download, Briefcase, MessageSquare, X, Clock, Activity, LogOut, ChevronRight, Share2, Edit2, Trash2, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
@@ -19,6 +19,8 @@ export default function AdminDashboard() {
   const [projectFilter, setProjectFilter] = useState('');
   
   const [selectedTicket, setSelectedTicket] = useState(null);
+  const [isEditingTicket, setIsEditingTicket] = useState(false);
+  const [editFormData, setEditFormData] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [exportType, setExportType] = useState('month');
   const [exportMonth, setExportMonth] = useState(new Date().toISOString().substring(0, 7));
@@ -93,6 +95,56 @@ export default function AdminDashboard() {
       if (interval) clearInterval(interval);
     };
   }, [filterDate]);
+
+  const handleDeleteTicket = async () => {
+    if (!selectedTicket) return;
+    if (window.confirm(`Are you sure you want to delete ticket ${selectedTicket.ticket_id}? This action cannot be undone.`)) {
+      setLoading(true);
+      const { error } = await supabase
+        .from('ticket_tracking')
+        .delete()
+        .eq('id', selectedTicket.id);
+
+      if (error) {
+        console.error('Error deleting ticket:', error);
+        alert('Failed to delete ticket.');
+      } else {
+        setSelectedTicket(null);
+        fetchData();
+      }
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateTicket = async (e) => {
+    e.preventDefault();
+    if (!editFormData || !selectedTicket) return;
+    
+    setLoading(true);
+    const { error } = await supabase
+      .from('ticket_tracking')
+      .update({
+        ticket_id: editFormData.ticket_id,
+        engineer_name: editFormData.engineer_name,
+        employee_id: editFormData.employee_id,
+        date: editFormData.date,
+        activity_time: editFormData.activity_time,
+        project_name: editFormData.project_name,
+        activity_type: editFormData.activity_type,
+        current_status: editFormData.current_status,
+        remarks: editFormData.remarks
+      })
+      .eq('id', selectedTicket.id);
+
+    if (error) {
+      console.error('Error updating ticket:', error);
+      alert('Failed to update ticket.');
+      setLoading(false);
+    } else {
+      setIsEditingTicket(false);
+      fetchData(); // This will refresh data and auto-update selectedTicket
+    }
+  };
 
   const downloadProductivity = async () => {
     setLoading(true);
@@ -609,12 +661,103 @@ export default function AdminDashboard() {
           <div className="lg:col-span-2">
             {selectedTicket ? (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 animate-fade-in relative h-[500px] flex flex-col">
+                <div className="absolute top-4 right-12 flex gap-1 z-10 pr-2 border-r border-gray-100">
+                  <button 
+                    onClick={() => {
+                      setEditFormData(selectedTicket);
+                      setIsEditingTicket(!isEditingTicket);
+                    }} 
+                    className={`p-2 rounded-full transition-colors ${isEditingTicket ? 'bg-indigo-100 text-indigo-700' : 'text-gray-400 hover:text-indigo-600 hover:bg-indigo-50'}`}
+                    title="Edit Ticket"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button 
+                    onClick={handleDeleteTicket} 
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                    title="Delete Ticket"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
                 <button 
-                  onClick={() => setSelectedTicket(null)} 
+                  onClick={() => {
+                    setSelectedTicket(null);
+                    setIsEditingTicket(false);
+                  }} 
                   className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-10"
                 >
                   <X size={18} />
                 </button>
+                
+                {isEditingTicket ? (
+                  <div className="flex-1 overflow-y-auto pr-2 pb-4 mt-8">
+                    <h3 className="font-bold text-gray-800 text-lg mb-4 flex items-center gap-2">
+                      <Edit2 size={20} className="text-indigo-600" />
+                      Edit Ticket Details
+                    </h3>
+                    <form onSubmit={handleUpdateTicket} className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="form-group">
+                          <label className="text-xs text-gray-500 font-semibold uppercase">Ticket ID</label>
+                          <input type="text" value={editFormData?.ticket_id || ''} onChange={(e) => setEditFormData({...editFormData, ticket_id: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 outline-none" required />
+                        </div>
+                        <div className="form-group">
+                          <label className="text-xs text-gray-500 font-semibold uppercase">Current Status</label>
+                          <select value={editFormData?.current_status || ''} onChange={(e) => setEditFormData({...editFormData, current_status: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 outline-none" required>
+                            {['Assigned', 'Start Journey', 'Travelling', 'Reached the Site', 'Attempted', 'Activity Completed', 'Leaving the Site', 'Cancelled'].map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="form-group">
+                          <label className="text-xs text-gray-500 font-semibold uppercase">Engineer Name</label>
+                          <input type="text" value={editFormData?.engineer_name || ''} onChange={(e) => setEditFormData({...editFormData, engineer_name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 outline-none" required />
+                        </div>
+                        <div className="form-group">
+                          <label className="text-xs text-gray-500 font-semibold uppercase">Employee ID</label>
+                          <input type="text" value={editFormData?.employee_id || ''} onChange={(e) => setEditFormData({...editFormData, employee_id: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 outline-none" required />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="form-group">
+                          <label className="text-xs text-gray-500 font-semibold uppercase">Activity Date</label>
+                          <input type="date" value={editFormData?.date || ''} onChange={(e) => setEditFormData({...editFormData, date: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 outline-none" required />
+                        </div>
+                        <div className="form-group">
+                          <label className="text-xs text-gray-500 font-semibold uppercase">Activity Time (e.g. 10:00 to 14:00)</label>
+                          <input type="text" value={editFormData?.activity_time || ''} onChange={(e) => setEditFormData({...editFormData, activity_time: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 outline-none" />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="form-group">
+                          <label className="text-xs text-gray-500 font-semibold uppercase">Project Name</label>
+                          <input type="text" value={editFormData?.project_name || ''} onChange={(e) => setEditFormData({...editFormData, project_name: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 outline-none" />
+                        </div>
+                        <div className="form-group">
+                          <label className="text-xs text-gray-500 font-semibold uppercase">Activity Type</label>
+                          <input type="text" value={editFormData?.activity_type || ''} onChange={(e) => setEditFormData({...editFormData, activity_type: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 outline-none" />
+                        </div>
+                      </div>
+                      
+                      <div className="form-group">
+                        <label className="text-xs text-gray-500 font-semibold uppercase">Remarks</label>
+                        <textarea value={editFormData?.remarks || ''} onChange={(e) => setEditFormData({...editFormData, remarks: e.target.value})} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-200 outline-none" rows="3"></textarea>
+                      </div>
+                      
+                      <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+                        <button type="button" onClick={() => setIsEditingTicket(false)} className="px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Cancel</button>
+                        <button type="submit" disabled={loading} className="px-4 py-2 text-sm font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2">
+                          <Save size={16} /> Save Changes
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                ) : (
+                  <>
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center flex-shrink-0">
                     <Activity size={20} />
@@ -716,6 +859,8 @@ export default function AdminDashboard() {
                     )}
                   </div>
                 </div>
+                </>
+              )}
               </div>
             ) : (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center justify-center h-[500px] text-gray-400">
