@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import MapComponent from '../components/MapComponent';
 import * as XLSX from 'xlsx';
-import { Users, Truck, CheckCircle2, MapPin, Search, RefreshCw, Calendar, ArrowLeft, Download, Briefcase, MessageSquare, X, Clock, Activity, LogOut, ChevronRight, Share2, Edit2, Trash2, Save } from 'lucide-react';
+import { Users, Truck, CheckCircle2, MapPin, Search, RefreshCw, Calendar, ArrowLeft, Download, Briefcase, MessageSquare, X, Clock, Activity, LogOut, ChevronRight, Share2, Edit2, Trash2, Save, Database } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function AdminDashboard() {
@@ -365,6 +365,8 @@ export default function AdminDashboard() {
         return projectFilteredData.filter(d => d.current_status === 'Reached the Site');
       case 'completed':
         return projectFilteredData.filter(d => d.current_status === 'Activity Completed' || d.current_status === 'Leaving the Site');
+      case 'overall':
+        return data;
       default:
         return [];
     }
@@ -509,7 +511,17 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
         
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div 
+            onClick={() => setStatModalConfig({ isOpen: true, title: 'Overall Data', type: 'overall' })}
+            className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer hover:shadow-md hover:border-teal-200 transition-all"
+          >
+            <div className="w-10 h-10 bg-teal-50 text-teal-600 rounded-lg flex items-center justify-center"><Database size={20} /></div>
+            <div>
+              <p className="text-[11px] text-gray-500 font-medium">Overall Data</p>
+              <h3 className="text-xl font-bold text-gray-800">{data.length}</h3>
+            </div>
+          </div>
           <div 
             onClick={() => setStatModalConfig({ isOpen: true, title: 'Active Engineers', type: 'active' })}
             className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center gap-3 cursor-pointer hover:shadow-md hover:border-purple-200 transition-all"
@@ -893,7 +905,7 @@ export default function AdminDashboard() {
       {/* Stats Details Modal */}
       {statModalConfig.isOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col h-[80vh] max-h-[600px] animate-fade-in">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-7xl overflow-hidden flex flex-col h-[85vh] max-h-[800px] animate-fade-in">
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
               <h3 className="font-bold text-gray-800 flex items-center gap-2">{statModalConfig.title} ({getStatModalData().length})</h3>
               <button onClick={() => setStatModalConfig({ isOpen: false, title: '', type: '' })} className="text-gray-400 hover:text-gray-700">
@@ -905,43 +917,66 @@ export default function AdminDashboard() {
               {getStatModalData().length === 0 ? (
                 <div className="flex justify-center items-center h-full text-gray-400">No records found.</div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {getStatModalData().map((item) => (
-                    <div 
-                      key={item.id} 
-                      onClick={() => {
-                        setSelectedTicket(item);
-                        setStatModalConfig({ isOpen: false, title: '', type: '' });
-                      }}
-                      className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex flex-col gap-2 cursor-pointer hover:border-indigo-200 hover:shadow-md transition-all"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-bold text-sm text-gray-800">{item.engineer_name}</p>
-                          <p className="text-[10px] text-gray-500 font-mono flex items-center gap-1 mt-0.5"><Briefcase size={10} /> ID: {item.employee_id}</p>
-                        </div>
-                        <span className={`text-[9px] font-bold px-2 py-1 rounded uppercase tracking-wider
-                          ${['Activity Completed', 'Leaving the Site'].includes(item.current_status) ? 'bg-emerald-100 text-emerald-700' : 
-                            ['Start Journey', 'Travelling', 'Attempted'].includes(item.current_status) ? 'bg-amber-100 text-amber-700' : 
-                            item.current_status === 'Cancelled' ? 'bg-red-100 text-red-700' : 
-                            item.current_status === 'Reached the Site' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}`}>
-                          {item.current_status}
-                        </span>
-                      </div>
-                      
-                      {statModalConfig.type !== 'active' && (
-                        <div className="text-xs text-gray-600 bg-gray-50 p-2 rounded-lg border border-gray-100">
-                          <span className="font-semibold text-gray-700">Ticket:</span> {item.ticket_id}
-                        </div>
-                      )}
-                      
-                      {item.latest_city && (
-                        <p className="text-[10px] text-gray-400 flex items-center gap-1">
-                          <MapPin size={10} /> {item.latest_city}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                <div className="overflow-x-auto w-full pb-2">
+                  <table className="w-full text-left text-sm whitespace-nowrap border-collapse">
+                    <thead className="bg-white sticky top-0 z-10 shadow-sm">
+                      <tr>
+                        <th className="px-4 py-3 font-bold text-gray-700 border-b border-gray-200">Engineer</th>
+                        <th className="px-4 py-3 font-bold text-gray-700 border-b border-gray-200">Emp ID</th>
+                        {statModalConfig.type !== 'active' && <th className="px-4 py-3 font-bold text-gray-700 border-b border-gray-200">Ticket ID</th>}
+                        <th className="px-4 py-3 font-bold text-gray-700 border-b border-gray-200">Project</th>
+                        <th className="px-4 py-3 font-bold text-gray-700 border-b border-gray-200">Date & Time</th>
+                        <th className="px-4 py-3 font-bold text-gray-700 border-b border-gray-200">Status</th>
+                        <th className="px-4 py-3 font-bold text-gray-700 border-b border-gray-200">Location</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 bg-white shadow-sm rounded-lg">
+                      {getStatModalData().map((item) => (
+                        <tr 
+                          key={item.id} 
+                          onClick={() => {
+                            setSelectedTicket(item);
+                            setStatModalConfig({ isOpen: false, title: '', type: '' });
+                          }}
+                          className="hover:bg-indigo-50 cursor-pointer transition-colors group"
+                        >
+                          <td className="px-4 py-3 font-semibold text-gray-800">{item.engineer_name}</td>
+                          <td className="px-4 py-3 text-xs font-mono text-gray-500">
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Briefcase size={12} className="text-gray-400 group-hover:text-indigo-400"/> {item.employee_id}
+                            </div>
+                          </td>
+                          {statModalConfig.type !== 'active' && (
+                            <td className="px-4 py-3 text-xs text-gray-600 font-medium">{item.ticket_id}</td>
+                          )}
+                          <td className="px-4 py-3 text-xs text-gray-600 font-medium">{item.project_name || '-'}</td>
+                          <td className="px-4 py-3 text-xs text-gray-600">
+                            <div className="flex flex-col gap-1">
+                              {item.date && <span className="flex items-center gap-1"><Calendar size={12} className="text-gray-400" /> {item.date}</span>}
+                              {item.activity_time && <span className="flex items-center gap-1"><Clock size={12} className="text-gray-400" /> {item.activity_time}</span>}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className={`text-[9px] font-bold px-2 py-1 rounded uppercase tracking-wider
+                              ${['Activity Completed', 'Leaving the Site'].includes(item.current_status) ? 'bg-emerald-100 text-emerald-700' : 
+                                ['Start Journey', 'Travelling', 'Attempted'].includes(item.current_status) ? 'bg-amber-100 text-amber-700' : 
+                                item.current_status === 'Cancelled' ? 'bg-red-100 text-red-700' : 
+                                item.current_status === 'Reached the Site' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700'}`}>
+                              {item.current_status}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500 max-w-[200px] truncate" title={item.latest_city}>
+                            {item.latest_city ? (
+                              <div className="flex items-center gap-1.5">
+                                <MapPin size={14} className="text-gray-400 group-hover:text-indigo-400 flex-shrink-0" />
+                                <span className="truncate">{item.latest_city}</span>
+                              </div>
+                            ) : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </div>
